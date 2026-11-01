@@ -3,6 +3,7 @@
 #include "kplugin.h"
 
 #include <QCoreApplication>
+#include <QRegExp>
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
 #else
@@ -136,6 +137,11 @@ QString PluginManager::sharePath() const
 
 
 
+
+void PluginManager::registerStaticPlugin(const QByteArray &name, StaticPluginFactory factory)
+{
+	staticPluginFactories()[name] = factory;
+}
 
 QString PluginManager::loadPluginsByTemplate(const QByteArray &templ)
 {

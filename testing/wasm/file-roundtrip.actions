@@ -1,0 +1,16 @@
+wait 7
+upload /t/fixtures/robot.kum
+wait 2
+shot uploaded
+key F9
+wait 2
+shot upload-run
+download saved.kum
+wait 1
+upload /out/saved.kum
+wait 2
+shot reopened
+download roundtrip.kum
+key F9
+wait 2
+shot roundtrip-run

@@ -1,5 +1,6 @@
 // Self includes
 #include "docbookfactory.h"
+#include <QRegExp>
 
 // Qt includes
 #include <QApplication>

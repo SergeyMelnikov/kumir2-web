@@ -7,6 +7,7 @@ You should change it corresponding to functionality.
 */
 
 #include "paintermodule.h"
+#include <kumir2/qtcompat_gui.h>
 #include "painterwindow.h"
 #include "painterview.h"
 #include "paintertools.h"
@@ -471,7 +472,7 @@ int PainterModule::runPageWidth()
 int PainterModule::runTextWidth(const QString &text)
 {
 	const QFontMetrics fm(font);
-	return fm.width(text);
+	return Kumir2Qt::textWidth(fm, text);
 }
 
 

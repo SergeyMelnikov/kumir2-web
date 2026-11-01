@@ -14,7 +14,14 @@ PainterNewImageDialog::PainterNewImageDialog(QWidget *parent, PainterModule *mod
 	m_module = module;
 	ui->setupUi(this);
 	ui->scrollable->setLayout(new QVBoxLayout);
+#if QT_VERSION >= 0x060000
+	// Qt6 has no currentIndexChanged(QString); Qt5 emitted it with itemText(index)
+	connect(ui->colorBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+		handleColorChanged(ui->colorBox->itemText(index));
+	});
+#else
 	connect(ui->colorBox, SIGNAL(currentIndexChanged(QString)), this, SLOT(handleColorChanged(QString)));
+#endif
 	connect(ui->radioButtonTemplate, SIGNAL(toggled(bool)), ui->pageTemplate, SLOT(setVisible(bool)));
 	connect(ui->radioButtonCustom, SIGNAL(toggled(bool)), ui->pageCustom, SLOT(setVisible(bool)));
 	connect(ui->listWidget, SIGNAL(itemClicked(QListWidgetItem *)), this, SLOT(handleTemplateClicked(QListWidgetItem *)));
@@ -51,7 +58,9 @@ int PainterNewImageDialog::exec()
 	QSettings *s = NULL;
 	if (QFile::exists(directory_ini)) {
 		s = new QSettings(directory_ini, QSettings::IniFormat);
-		s->setIniCodec("UTF-8");
+#if QT_VERSION < 0x060000
+		s->setIniCodec("UTF-8"); // Qt6 always uses UTF-8 for INI files
+#endif
 	}
 	sl_templateNames.clear();
 	foreach (const QString &fileName, sl_templateFiles) {

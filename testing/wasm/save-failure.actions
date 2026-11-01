@@ -1,0 +1,15 @@
+wait 7
+click 170 110
+key Control+Home
+key Control+a
+type | текст до ошибки записи
+key Enter
+fail-save
+wait 1
+shot write-error
+key Escape
+wait 1
+key Control+n
+wait 1
+shot still-unsaved
+key Escape

@@ -365,7 +365,11 @@ bool turtle::checkPos(qreal *x, qreal *y)
 	QLineF turtleStepLine(curX, curY, futurePosX, futurePosY);
 	QPointF endPos;
 	for (int i = 0; i < desertBorders.count(); i++) { //Проверяем выход за границу поля
+#if QT_VERSION >= 0x060000
+		if (turtleStepLine.intersects(desertBorders[i], &endPos) == QLineF::BoundedIntersection) {
+#else
 		if (turtleStepLine.intersect(desertBorders[i], &endPos) == QLineF::BoundedIntersection) {
+#endif
 			*x = endPos.x();
 			*y = endPos.y();
 			if (*x > 0) {

@@ -17,7 +17,9 @@ class KumirCodeGeneratorPlugin
 {
     Q_OBJECT
 #if QT_VERSION >= 0x050000
+#ifndef KUMIR2_STATIC_PLUGINS // static build registers plugins by factory functions
     Q_PLUGIN_METADATA(IID "kumir2.KumirCodeGenerator")
+#endif
 #endif
     Q_INTERFACES(Shared::GeneratorInterface)
 

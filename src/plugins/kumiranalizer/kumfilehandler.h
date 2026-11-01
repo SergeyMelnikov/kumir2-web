@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <kumir2/analizer_sourcefileinterface.h>
+#include <kumir2/qtcompat.h>
 
 namespace KumirAnalizer {
 
@@ -24,15 +25,10 @@ public:
     // KumFile implementation shoud use UTF-16 encoding if no BOM present
     // to allows compatibility with Kumir 1.x
     inline Data fromBytes(const QByteArray & bytes, const QString & forceEncoding = "") const {
-        QByteArray bytesCopy(bytes);
-        QTextStream stream(&bytesCopy);
-        if (forceEncoding.length() > 0)
-            stream.setCodec(forceEncoding.toLatin1().constData());
-        else {
-            stream.setCodec("UTF-16");
-            stream.setAutoDetectUnicode(true);
-        }
-        QString string = stream.readAll();
+        // QTextStream auto-detects Unicode BOM by default, so it is enabled in both cases
+        const QByteArray codecName = forceEncoding.length() > 0
+            ? forceEncoding.toLatin1() : QByteArray("UTF-16");
+        QString string = Kumir2Qt::decodeText(bytes, codecName.constData(), true);
         return fromString(string);
     }
 private:

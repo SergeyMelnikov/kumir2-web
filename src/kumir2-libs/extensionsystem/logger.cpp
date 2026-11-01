@@ -107,7 +107,11 @@ bool Logger::isDebugOnLinux()
 void Logger::writeLog(const char *type, const QString &message)
 {
 	QByteArray buffer;
+#if QT_VERSION >= 0x060000
+	buffer += QDateTime::currentDateTime().toString("hh:mm:ss").toUtf8();
+#else
 	buffer += QDateTime::currentDateTime().toString("hh:mm:ss");
+#endif
 	buffer += "  ";
 	buffer += QByteArray(type);
 	buffer += " \t";

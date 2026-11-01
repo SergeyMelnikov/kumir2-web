@@ -1,4 +1,5 @@
 #include "rfield.h"
+#include <kumir2/qtcompat_gui.h>
 #include "cfield.h"
 #include "editline.h"
 #include "srobot.h"
@@ -55,7 +56,7 @@ FieldItm::FieldItm(QGraphicsItem *par, QGraphicsScene *scene)
 	font.setStyleHint(QFont::SansSerif);
 	radiation = 0;
 	temperature = 0;
-	font.setWeight(2);
+	Kumir2Qt::setLegacyFontWeight(font, 2);
 	TextColor = QColor(sett->value("Robot/TextColor", "#FFFFFF").toString());
 	upCharFld = NULL;
 	downCharFld = NULL;

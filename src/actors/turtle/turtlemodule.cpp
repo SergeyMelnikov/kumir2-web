@@ -8,6 +8,7 @@ You should change it corresponding to functionality.
 
 // Self include
 #include "turtlemodule.h"
+#include <kumir2/qtcompat_gui.h>
 #include "pult.h"
 
 // Kumir includes
@@ -705,7 +706,7 @@ void    TurtleView::wheelEvent(QWheelEvent *event)
 	if (!dr_mutex->tryLock(20)) {
 		return;
 	}
-	float numDegrees = event->delta() / 8;
+	float numDegrees = Kumir2Qt::wheelDelta(event) / 8;
 	qDebug() << "whell:" << numDegrees;
 	//        c_scale=c_scale*0.8;
 	qDebug() << "Scale" << c_scale;
@@ -1312,7 +1313,11 @@ TurtlePen::TurtlePen(QGraphicsItem *parent, QString svgFileName):
 	// See Qt documentation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	turtle->setTransform(QTransform::fromScale(0.01, 0.01), true);
 
+#if QT_VERSION >= 0x060000
+	QTransform mat;
+#else
 	QMatrix mat;
+#endif
 	mat.rotate(180);
 	mat.scale(0.5, 0.5);
 	// turtle.setBoundingRect(QRect(-15,-15,15,15));

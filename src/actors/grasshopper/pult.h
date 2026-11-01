@@ -33,7 +33,7 @@ public:
 	GrasshopperPult(
 		const QDir &resDir, KumKuznec *kobj,
 		QWidget *parent = 0,
-		Qt::WindowFlags fl = 0
+		Qt::WindowFlags fl = Qt::WindowFlags()
 	);
 	~GrasshopperPult();
 

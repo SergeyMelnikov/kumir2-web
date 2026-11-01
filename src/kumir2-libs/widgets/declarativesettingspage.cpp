@@ -2,6 +2,7 @@
 #include "declarativesettingspage_impl.h"
 
 #include <QVBoxLayout>
+#include <kumir2/qtcompat.h>
 
 namespace Widgets
 {
@@ -26,7 +27,7 @@ DeclarativeSettingsPage::DeclarativeSettingsPage(
 		entry.key = key;
 		entriesArray.push_back(entry);
 	}
-	qSort(entriesArray);
+	Kumir2Qt::qtSort(entriesArray);
 	Q_FOREACH (const Entry &entry, entriesArray) {
 		const QString &key = entry.key;
 		if (entry.type == Integer) {

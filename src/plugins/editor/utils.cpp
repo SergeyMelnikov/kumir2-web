@@ -8,7 +8,11 @@
 #endif
 
 #if defined(Q_WS_X11) || defined(Q_OS_LINUX)
-#   include <QX11Info>
+#   if QT_VERSION >= 0x060000
+#       include <QGuiApplication>
+#   else
+#       include <QX11Info>
+#   endif
 #   include <X11/XKBlib.h>
 #   include <X11/Xatom.h>
 #endif
@@ -19,6 +23,20 @@
 
 namespace Editor
 {
+
+#if defined(Q_WS_X11) || defined(Q_OS_LINUX)
+static Display *x11Display()
+{
+#if QT_VERSION >= 0x060000
+	// Returns nullptr when not running on X11 (e.g. Wayland)
+	QNativeInterface::QX11Application *x11App =
+		qApp->nativeInterface<QNativeInterface::QX11Application>();
+	return x11App ? x11App->display() : nullptr;
+#else
+	return QX11Info::display();
+#endif
+}
+#endif
 
 bool Utils::isRussianLayout()
 {
@@ -33,7 +51,7 @@ bool Utils::isRussianLayout()
 	QInputMethod *inputMethod = QApplication::inputMethod();
 	QString keybLang = inputMethod->locale().name();
 	result = keybLang.contains("ru");
-	Display *d = QX11Info::display();
+	Display *d = x11Display();
 	if (d && !result) {  // Might be variant of main input method
 		// solution found at: http://www.linux.org.ru/forum/development/12852504
 		XkbStateRec xkbState;
@@ -73,7 +91,7 @@ bool Utils::isCapsLock()
 {
 	bool result = false;
 #if defined(Q_WS_X11) || defined(Q_OS_LINUX)
-	Display *d = QX11Info::display();
+	Display *d = x11Display();
 	if (d) {
 		unsigned n;
 		XkbGetIndicatorState(d, XkbUseCoreKbd, &n);

@@ -5,6 +5,7 @@
 #include <QSet>
 #include <QUrl>
 #include <QTextStream>
+#include <kumir2/qtcompat.h>
 
 namespace Shared
 {
@@ -42,32 +43,21 @@ public /*methods*/:
 		const SFData &data,
 		const QString &forceEncoding = ""
 	) const {
-		QByteArray buffer;
-		QTextStream stream(&buffer, QIODevice::WriteOnly);
 		if (forceEncoding.length() > 0) {
-			stream.setCodec(forceEncoding.toLatin1().constData());
+			return Kumir2Qt::encodeText(toString(data), forceEncoding.toLatin1().constData(), false);
 		} else {
-			stream.setCodec("UTF-8");
-			stream.setGenerateByteOrderMark(true);
+			return Kumir2Qt::encodeText(toString(data), "UTF-8", true);
 		}
-		stream << toString(data);
-		stream.flush();
-		return buffer;
 	}
 
 	virtual SFData fromBytes(
 		const QByteArray &bytes,
 		const QString &forceEncoding = ""
 	) const {
-		QByteArray bytesCopy(bytes);
-		QTextStream stream(&bytesCopy);
-		if (forceEncoding.length() > 0) {
-			stream.setCodec(forceEncoding.toLatin1().constData());
-		} else {
-			stream.setCodec("UTF-8");
-			stream.setAutoDetectUnicode(true);
-		}
-		QString string = stream.readAll();
+		// QTextStream auto-detects Unicode BOM by default, so it is enabled in both cases
+		const QByteArray codecName = forceEncoding.length() > 0
+			? forceEncoding.toLatin1() : QByteArray("UTF-8");
+		QString string = Kumir2Qt::decodeText(bytes, codecName.constData(), true);
 		return fromString(string);
 	}
 

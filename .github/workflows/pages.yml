@@ -1,0 +1,58 @@
+# Builds kumir2-classic for WebAssembly and publishes it to GitHub Pages.
+# Repository settings: Pages -> Source: GitHub Actions.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # version info is taken from git history
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build toolchain image (Qt for WebAssembly + emsdk)
+        uses: docker/build-push-action@v7
+        with:
+          context: scripts/docker
+          file: scripts/docker/qt6-wasm.Dockerfile
+          tags: kumir2-qt6-wasm
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build kumir2-classic
+        run: scripts/docker/build-wasm.sh
+
+      - name: Assemble site
+        run: scripts/pages/prepare-site.sh build-wasm/bin _site
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

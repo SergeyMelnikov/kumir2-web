@@ -1,0 +1,4 @@
+wait 7
+upload /t/fixtures/robot.kum
+wait 2
+shot open

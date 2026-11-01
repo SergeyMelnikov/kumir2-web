@@ -34,3 +34,8 @@ __pycache__
 /userdocs/*.aux
 /userdocs/*.out
 *.log
+
+# Out-of-tree builds and test output of the Qt6/WASM port
+/build-*/
+/build-qtcompat-test.*.txt
+/_site/

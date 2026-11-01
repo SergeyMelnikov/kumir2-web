@@ -1,5 +1,7 @@
 #include "errormessages.h"
 #include <kumir2-libs/extensionsystem/pluginmanager.h>
+#include <kumir2/qtcompat.h>
+#include <QRegExp>
 
 #include <QDebug>
 
@@ -52,7 +54,7 @@ bool ErrorMessages::loadMessages(const QByteArray &pluginName)
 
 	if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QTextStream ts(&f);
-		ts.setCodec("UTF-8");
+		Kumir2Qt::setStreamCodec(ts, "UTF-8");
 		ts.setAutoDetectUnicode(true);
 		QStringList languages = readCSVRow(ts.readLine()).mid(1);
 		QList<Context> contexts;

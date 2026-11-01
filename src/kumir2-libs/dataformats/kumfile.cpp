@@ -18,28 +18,28 @@ Shared::Analizer::SFData KumFile::insertTeacherMark(
 ) { //Inserts |#%% if needed.
 
 	static const QRegExp teacherMark("(^|\\n)\\|#%%");
-	if (data.visibleText.indexOf(teacherMark) > -1) {
+	if (QRegExp(teacherMark).indexIn(data.visibleText) > -1) {
 		//qDebug()<<" TM POS:"<<data.visibleText.indexOf("\n|#%%");
 		return data;
 	};
-	if (data.hiddenText.indexOf(teacherMark) > -1) {
+	if (QRegExp(teacherMark).indexIn(data.hiddenText) > -1) {
 		// qDebug()<<" TM POS:"<<data.visibleText.indexOf("\n|#%%");
 		return data;
 	};
 	// static const QRegExp speclAlg(QString::fromUtf8("^\\s*алг\\s*(\\S\\S\\S)?\\s+@"));
 	static const QRegExp speclAlg(QString::fromUtf8("^|\\s*алг\\s*(\\S\\S\\S)?\\s*@"));
 
-	int pos = data.hiddenText.indexOf(speclAlg);
+	int pos = QRegExp(speclAlg).indexIn(data.hiddenText);
 	qDebug() << data.hiddenText;
 	if (pos > -1) {
 
 		data.hiddenText.insert(pos, "\n|#%%\n");
 		return data;
 	};
-	pos = data.visibleText.indexOf(speclAlg);
+	pos = QRegExp(speclAlg).indexIn(data.visibleText);
 	if (pos > 1) {
 		data.visibleText.insert(pos, "\n|#%%\n");
-		QStringList strings = data.visibleText.split("\n", QString::KeepEmptyParts);
+		QStringList strings = data.visibleText.split("\n") /* KeepEmptyParts is default */;
 		for (int i = 0; i < strings.count(); i++) {
 			if (strings.at(i).startsWith("|#%%")) {
 				data.protectedLineNumbers.insert(i);

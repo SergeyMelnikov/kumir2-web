@@ -1,0 +1,12 @@
+wait 7
+click 170 110
+key Control+Home
+key Control+a
+type | текст до отмены сохранения
+key Enter
+cancel-save
+wait 1
+shot save-cancelled
+key Control+n
+wait 1
+shot new-after-cancelled-save

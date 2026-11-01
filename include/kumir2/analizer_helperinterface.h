@@ -2,6 +2,7 @@
 #define ANALIZER_HELPERINTERFACE_H
 
 #include <QtPlugin>
+#include <QRegExp>
 #include "kumir2-libs/dataformats/lexemtype.h"
 
 

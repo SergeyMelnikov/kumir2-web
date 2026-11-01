@@ -7,6 +7,7 @@ You should change it corresponding to functionality.
 */
 
 #include "complexnumbersmodule.h"
+#include <QRegExp>
 #include <kumir2-libs/stdlib/kumirstdlib.hpp>
 
 namespace ActorComplexNumbers {
@@ -124,7 +125,11 @@ Complex ComplexNumbersModule::runOperatorASSIGN(const qreal x)
 Complex ComplexNumbersModule::runOperatorINPUT(const QString& x, bool& ok)
 {
 	static const QRegExp rxPlusMinus("[+-]");
+#if QT_VERSION >= 0x060000
+	int p = QRegExp(rxPlusMinus).indexIn(x);
+#else
 	int p = x.indexOf(rxPlusMinus);
+#endif
 	QString re = "0.0", im = "0.0";
 	if (p==-1) {
 		if (x.trimmed().endsWith(QChar('i'), Qt::CaseInsensitive))

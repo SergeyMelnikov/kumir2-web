@@ -1,4 +1,5 @@
 #include "kumfilehandler.h"
+#include <kumir2/qtcompat.h>
 #include <QStringList>
 
 
@@ -13,7 +14,7 @@ KumFileHandler::KumFileHandler(QObject *parent) : QObject(parent)
 QString KumFileHandler::toString(const Data &data) const
 {
 	QString result;
-	QStringList lines = data.visibleText.split("\n", QString::KeepEmptyParts);
+	QStringList lines = data.visibleText.split("\n", Kumir2Qt::KeepEmptyParts);
 	for (int i = 0; i < lines.count(); i++) {
 		result += lines[i];
 		if (data.protectedLineNumbers.contains(i)) {
@@ -24,7 +25,7 @@ QString KumFileHandler::toString(const Data &data) const
 		}
 	}
 
-	QStringList hiddenLines = !data.hiddenText.isEmpty() ? data.hiddenText.split("\n", QString::KeepEmptyParts) : QStringList();
+	QStringList hiddenLines = !data.hiddenText.isEmpty() ? data.hiddenText.split("\n", Kumir2Qt::KeepEmptyParts) : QStringList();
 	if (!result.isEmpty()) {
 		result += "\n";
 	}
@@ -45,7 +46,7 @@ QString KumFileHandler::toString(const Data &data) const
 
 SourceFileInterface::Data KumFileHandler::fromString(const QString &s) const
 {
-	QStringList lines = s.split("\n", QString::KeepEmptyParts);
+	QStringList lines = s.split("\n", Kumir2Qt::KeepEmptyParts);
 	Data data;
 	data.hasHiddenText = false;
 	int lineNo = -1;

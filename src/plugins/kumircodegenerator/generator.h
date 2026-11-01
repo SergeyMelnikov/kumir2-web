@@ -35,7 +35,7 @@ struct ConstValue {
 	QString recordClassLocalizedName;
 	QByteArray recordClassAsciiName;
 	quint8 dimension;
-	inline bool operator==(const ConstValue &other)
+	inline bool operator==(const ConstValue &other) const
 	{
 		return
 			baseType == other.baseType &&

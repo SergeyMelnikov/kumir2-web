@@ -38,7 +38,11 @@ public:
 
 	QStringList isps; //исполнители используемые в задание
 	QStringList Scripts; //скрипты используемые в задание
+#if QT_VERSION >= 0x060000
+	QMultiMap<QString, QString> fields; //Обстановки для каждого исполнителя fields[исп,обст]
+#else
 	QMap<QString, QString> fields; //Обстановки для каждого исполнителя fields[исп,обст]
+#endif
 };
 
 #endif // KUMZADANIE_H

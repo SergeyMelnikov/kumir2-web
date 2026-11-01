@@ -1,0 +1,25 @@
+wait 6
+click 180 110
+key Control+Home
+key Control+a
+type алг
+key Enter
+type нач
+key Enter
+type цел а
+key Enter
+type ввод а
+key Enter
+type вывод а * 2, нс
+key Enter
+type кон
+key Enter
+wait 2
+key F9
+wait 2
+shot waiting-input
+click 160 710
+type 21
+key Enter
+wait 2
+shot input-result

@@ -1,4 +1,5 @@
 #include "mathmlrenderer.h"
+#include <kumir2/qtcompat_gui.h>
 #include <QApplication>
 #include <QPalette>
 #include <QPainter>
@@ -25,7 +26,11 @@ const QImage &MathMLRenderer::render(ModelPtr data)
 		font_ = mathFont(BASE_FONT_SIZE);
 		const QPalette pal = qApp->palette();
 		fgColor_ = pal.brush(QPalette::Text).color();
+#if QT_VERSION >= 0x060000
+		bgColor_ = pal.brush(QPalette::Window).color();
+#else
 		bgColor_ = pal.brush(QPalette::Background).color();
+#endif
 		data->cachedImage_ = renderBlock(data);
 	}
 	return data->cachedImage_;
@@ -151,7 +156,7 @@ QImage MathMLRenderer::renderOperator(ModelPtr element)
 		}
 		QFont font = regularFont(font_.pointSizeF());
 		QFontMetrics fm(font);
-		result = QImage(fm.width(op), fm.lineSpacing(), QImage::Format_ARGB32);
+		result = QImage(Kumir2Qt::textWidth(fm, op), fm.lineSpacing(), QImage::Format_ARGB32);
 		result.fill(0);
 		QPainter painter(&result);
 		painter.setFont(font);
@@ -168,7 +173,7 @@ QImage MathMLRenderer::renderPlainText(ModelPtr element)
 	QFontMetrics fm(font_);
 
 
-	QImage image(fm.width(plainText) + 2, fm.lineSpacing(), QImage::Format_ARGB32);
+	QImage image(Kumir2Qt::textWidth(fm, plainText) + 2, fm.lineSpacing(), QImage::Format_ARGB32);
 	image.fill(0);
 	QPainter painter(&image);
 	painter.setFont(font_);
@@ -183,7 +188,7 @@ QImage MathMLRenderer::renderSqrt(ModelPtr element)
 {
 	QImage inner = renderBlock(element);
 	QFontMetrics fm(font_);
-	int sqrtSymbolWidth = fm.width('m');
+	int sqrtSymbolWidth = Kumir2Qt::textWidth(fm, QChar('m'));
 	int sqrtSymbolHeight = fm.lineSpacing() / 2;
 	QImage result(inner.width() + 2 * GRAPHICS_SPACING + sqrtSymbolWidth,
 		inner.height() + GRAPHICS_SPACING,

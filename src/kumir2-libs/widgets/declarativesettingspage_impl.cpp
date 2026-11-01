@@ -10,6 +10,7 @@
 #include <QToolButton>
 #include <QHBoxLayout>
 #include <QColorDialog>
+#include <QRegExp>
 
 namespace Widgets
 {

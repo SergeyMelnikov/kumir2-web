@@ -3,7 +3,8 @@ project(Editor)
 #find_package(Kumir2 REQUIRED)
 kumir2_use_qt(Core Gui Xml)
 
-if(${USE_QT} GREATER 4 AND UNIX AND NOT APPLE)
+# Qt6 provides X11 access via QNativeInterface, so X11Extras is Qt5-only
+if(${USE_QT} EQUAL 5 AND UNIX AND NOT APPLE)
 	find_package(Qt5 5.3.0 COMPONENTS X11Extras REQUIRED)
 	include_directories(${Qt5X11Extras_INCLUDE_DIRS})
 	list(APPEND QT_LIBRARIES ${Qt5X11Extras_LIBRARIES})
@@ -11,7 +12,7 @@ endif()
 
 set(EXTRA_LIBS)
 
-if(UNIX AND NOT APPLE)
+if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 	find_package(X11 REQUIRED)
 	set(EXTRA_LIBS ${X11_LIBRARIES})
 endif()
@@ -71,6 +72,8 @@ kumir2_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
 
 kumir2_add_plugin(
 	NAME        Editor
+	CLASS       Editor::EditorPlugin
+	HEADER      editorplugin.h
 	SOURCES     ${UI_SOURCES} ${MOC_SOURCES} ${SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} ${EXTRA_LIBS} ExtensionSystem DataFormats Widgets DocBookViewer
 )

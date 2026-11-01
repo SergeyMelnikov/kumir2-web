@@ -5,6 +5,7 @@
 #include <kumir2-libs/dataformats/ast_variabletype.h>
 
 #include <QSet>
+#include <QRegExp>
 #include <QLocale>
 class QDir;
 

@@ -1,4 +1,5 @@
 #include <kumir2-libs/dataformats/kumfile.h>
+#include <kumir2/qtcompat.h>
 #include <kumir2-libs/widgets/declarativesettingspage.h>
 #include "coursemanager_plugin.h"
 #include "task/coursemanager_window.h"
@@ -71,7 +72,7 @@ QList<QMenu *> Plugin::menus() const
 QStringList Plugin::getListOfCourses() const
 {
 	QString defaultCur = qApp->property("sharePath").toString() + "/courses/practicum/practicum.kurs.xml;";
-	return mySettings()->value("Courses/LastFiles", defaultCur).toString().split(";", QString::SkipEmptyParts);
+	return mySettings()->value("Courses/LastFiles", defaultCur).toString().split(";", Kumir2Qt::SkipEmptyParts);
 }
 
 int Plugin::loadWorkBook(QString wbfilename, QString cbname)
@@ -174,7 +175,11 @@ int Plugin::checkTaskFromConsole(const int taskID)
 		QStringList t_fields = course->Fields(taskID, task.isps[i]);
 		for (int j = 0; j < t_fields.count(); j++) {
 
+#if QT_VERSION >= 0x060000
+			task.fields.insert(task.isps[i], curDir + '/' + t_fields[j]);
+#else
 			task.fields.insertMulti(task.isps[i], curDir + '/' + t_fields[j]);
+#endif
 
 		}
 	}

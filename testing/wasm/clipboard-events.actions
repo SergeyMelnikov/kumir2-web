@@ -1,0 +1,19 @@
+wait 7
+trace-input
+click 180 110
+key Control+Home
+key Control+a
+type | события буфера
+key Home
+key Shift+End
+key Control+c
+wait 1
+read-clipboard
+key End
+key Enter
+key Control+v
+wait 1
+shot keyboard-paste
+paste | внешняя вставка
+wait 1
+shot event-paste

@@ -75,7 +75,7 @@ public:
 	     * @param parent ссыка на объект-владелец
 	     * @param fl флаги окна
 	     */
-	TurtlePult(QDir resDir = QDir(), QWidget *parent = 0, Qt::WindowFlags fl = 0);
+	TurtlePult(QDir resDir = QDir(), QWidget *parent = 0, Qt::WindowFlags fl = Qt::WindowFlags());
 	/**
 	     * Деструктор
 	     */

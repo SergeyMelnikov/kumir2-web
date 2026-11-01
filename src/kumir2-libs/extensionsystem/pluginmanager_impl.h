@@ -8,6 +8,9 @@
 namespace ExtensionSystem
 {
 
+// Statically linked plugins: name -> factory (see PluginManager::registerStaticPlugin)
+QMap<QByteArray, PluginManager::StaticPluginFactory> &staticPluginFactories();
+
 struct PluginManagerImpl {
 	QList<KPlugin *> objects;
 	QString path;

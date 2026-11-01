@@ -11,6 +11,7 @@ endif(NOT DEFINED KUMIR2_INSTALL_PREFIX)
 
 set(MINIMUM_QT4_VERSION 4.8.0)
 set(MINIMUM_QT5_VERSION 5.3.0)
+set(MINIMUM_QT6_VERSION 6.2.0)
 
 if(NOT DEFINED USE_QT)
     set(USE_QT 4)
@@ -21,7 +22,21 @@ endif(NOT DEFINED USE_QT)
 #endif()
 
 # Find lrelease, moc and uic tools from Qt
-if(${USE_QT} GREATER 4)
+if(${USE_QT} GREATER 5)
+    # Find Qt6
+    find_package(Qt6 ${MINIMUM_QT6_VERSION} COMPONENTS Core Widgets Core5Compat REQUIRED)
+    find_package(Qt6 ${MINIMUM_QT6_VERSION} COMPONENTS LinguistTools QUIET)
+    message(STATUS "Qt6 found at ${Qt6_DIR}")
+    # QObject::trUtf8 was removed in Qt6; for UTF-8 sources it is the same as tr
+    add_compile_definitions(trUtf8=tr)
+    # Imported targets are resolved to executable paths in add_custom_command
+    set(QT_MOC_EXECUTABLE Qt6::moc)
+    if(TARGET Qt6::lrelease)
+        set(QT_LRELEASE_EXECUTABLE Qt6::lrelease)
+    else()
+        message(WARNING "Qt6 LinguistTools not found, translations will not be built")
+    endif()
+elseif(${USE_QT} GREATER 4)
     # Find Qt5
     find_package(Qt5 ${MINIMUM_QT5_VERSION} COMPONENTS Core Widgets REQUIRED)
     message(STATUS "Qt5 found at ${_qt5Core_install_prefix}")
@@ -32,6 +47,31 @@ else()
     find_package(Qt4 ${MINIMUM_QT4_VERSION} COMPONENTS QtCore REQUIRED)
     message(STATUS "Qt4 found at ${QT_USE_FILE}")
     include(${QT_USE_FILE})
+endif()
+
+# Static build: libraries and plugins are linked into executables instead of
+# being loaded at run time (required for WebAssembly, optional otherwise)
+if(NOT DEFINED KUMIR2_STATIC_PLUGINS)
+    if(EMSCRIPTEN)
+        set(KUMIR2_STATIC_PLUGINS ON)
+    else()
+        set(KUMIR2_STATIC_PLUGINS OFF)
+    endif()
+endif()
+set(KUMIR2_STATIC_PLUGINS ${KUMIR2_STATIC_PLUGINS} CACHE BOOL "Link plugins statically into executables")
+if(KUMIR2_STATIC_PLUGINS)
+    message(STATUS "Static plugins build: plugins are linked into executables")
+    # Also seen by moc (see kumir2_qt_moc): disables Q_PLUGIN_METADATA in plugin classes
+    add_definitions(-DKUMIR2_STATIC_PLUGINS)
+    set(KUMIR2_LIBRARY_TYPE STATIC)
+    if(${USE_QT} GREATER 5)
+        # Static libraries pass their Qt dependencies to executables in other
+        # directories: make all used Qt targets visible project-wide
+        find_package(Qt6 ${MINIMUM_QT6_VERSION} COMPONENTS
+            Core Core5Compat Gui Widgets PrintSupport Xml Svg SvgWidgets REQUIRED)
+    endif()
+else()
+    set(KUMIR2_LIBRARY_TYPE SHARED)
 endif()
 
 if(DEFINED KUMIR2_DISABLED_SUBDIRS)
@@ -75,7 +115,18 @@ function(kumir2_use_qt)
     set(_QT_LIBRARIES)
     set(_QT_INCLUDES)
     foreach(component ${ARGN})
-        if(${USE_QT} GREATER 4)
+        if(${USE_QT} GREATER 5)
+            list(APPEND _QT_COMPONENTS ${component})
+            if(${component} MATCHES "Core")
+                list(APPEND _QT_COMPONENTS "Core5Compat")
+            endif()
+            if(${component} MATCHES "Gui")
+                list(APPEND _QT_COMPONENTS "Widgets" "PrintSupport")
+            endif()
+            if(${component} MATCHES "Svg")
+                list(APPEND _QT_COMPONENTS "SvgWidgets")
+            endif()
+        elseif(${USE_QT} GREATER 4)
             list(APPEND _QT_COMPONENTS ${component})
             if(${component} MATCHES "Gui")
                 list(APPEND _QT_COMPONENTS "Widgets" "PrintSupport")
@@ -84,7 +135,21 @@ function(kumir2_use_qt)
             list(APPEND _QT_COMPONENTS "Qt${component}")
         endif()
     endforeach(component)
-    if(${USE_QT} GREATER 4)
+    if(${USE_QT} GREATER 5)
+        list(REMOVE_DUPLICATES _QT_COMPONENTS)
+        find_package(Qt6 ${MINIMUM_QT6_VERSION} COMPONENTS ${_QT_COMPONENTS} QUIET REQUIRED)
+        foreach(component ${_QT_COMPONENTS})
+            # Directory-level include paths are also passed to moc (see kumir2_qt_moc)
+            get_target_property(_incs Qt6::${component} INTERFACE_INCLUDE_DIRECTORIES)
+            foreach(_inc ${_incs})
+                if(NOT _inc MATCHES "\\$<")
+                    include_directories(${_inc})
+                    list(APPEND _QT_INCLUDES ${_inc})
+                endif()
+            endforeach(_inc)
+            list(APPEND _QT_LIBRARIES Qt6::${component})
+        endforeach(component)
+    elseif(${USE_QT} GREATER 4)
         find_package(Qt5 ${MINIMUM_QT5_VERSION} COMPONENTS ${_QT_COMPONENTS} QUIET REQUIRED)
         foreach(component ${_QT_COMPONENTS})
             include_directories(${Qt5${component}_INCLUDE_DIRS})
@@ -155,7 +220,9 @@ function(kumir2_wrap_cpp OUTVAR)
 endfunction(kumir2_wrap_cpp)
 
 macro(kumir2_wrap_ui)
-    if(${USE_QT} GREATER 4)
+    if(${USE_QT} GREATER 5)
+        qt6_wrap_ui(${ARGN})
+    elseif(${USE_QT} GREATER 4)
         qt5_wrap_ui(${ARGN})
     else()
         qt4_wrap_ui(${ARGN})
@@ -163,7 +230,9 @@ macro(kumir2_wrap_ui)
 endmacro(kumir2_wrap_ui)
 
 macro(kumir2_add_resources)
-    if(${USE_QT} GREATER 4)
+    if(${USE_QT} GREATER 5)
+        qt6_add_resources(${ARGN})
+    elseif(${USE_QT} GREATER 4)
         qt5_add_resources(${ARGN})
     else()
         qt4_add_resources(${ARGN})
@@ -214,7 +283,7 @@ function(kumir2_add_library)
     endif(KUMIR2_ROOT)
     cmake_parse_arguments(PARSED_ARGS "" "NAME" "SOURCES;LIBRARIES" ${ARGN})
     string(TOUPPER "${PARSED_ARGS_NAME}_LIBRARY" LIB_DEF)
-    add_library(${PARSED_ARGS_NAME} SHARED ${PARSED_ARGS_SOURCES})
+    add_library(${PARSED_ARGS_NAME} ${KUMIR2_LIBRARY_TYPE} ${PARSED_ARGS_SOURCES})
     if(PARSED_ARGS_LIBRARIES)
         target_link_libraries(${PARSED_ARGS_NAME} ${PARSED_ARGS_LIBRARIES})
     endif(PARSED_ARGS_LIBRARIES)
@@ -237,8 +306,28 @@ function(kumir2_add_plugin)
         include_directories("${KUMIR2_ROOT}/include")
     endif(KUMIR2_ROOT)
     include_here()
-    cmake_parse_arguments(PARSED_ARGS "" "NAME" "SOURCES;LIBRARIES" ${ARGN})    
-    add_library(${PARSED_ARGS_NAME} SHARED ${PARSED_ARGS_SOURCES})
+    # CLASS (fully qualified plugin class) and HEADER (its header file) are
+    # required for static plugins build
+    cmake_parse_arguments(PARSED_ARGS "" "NAME;CLASS;HEADER" "SOURCES;LIBRARIES" ${ARGN})
+    if(KUMIR2_STATIC_PLUGINS)
+        if(NOT PARSED_ARGS_CLASS OR NOT PARSED_ARGS_HEADER)
+            message(FATAL_ERROR "Plugin ${PARSED_ARGS_NAME}: CLASS and HEADER are required for static plugins build")
+        endif()
+        # Factory function called by the code generated in kumir2_add_launcher
+        set(FACTORY_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PARSED_ARGS_NAME}_static_factory.cpp")
+        file(WRITE "${FACTORY_FILE}.in"
+            "// Generated by kumir2_add_plugin\n"
+            "#include \"${PARSED_ARGS_HEADER}\"\n"
+            "extern \"C\" ExtensionSystem::KPlugin *kumir2_static_plugin_factory_${PARSED_ARGS_NAME}()\n"
+            "{\n"
+            "\treturn new ${PARSED_ARGS_CLASS}();\n"
+            "}\n"
+        )
+        configure_file("${FACTORY_FILE}.in" "${FACTORY_FILE}" COPYONLY)
+        list(APPEND PARSED_ARGS_SOURCES "${FACTORY_FILE}")
+        set_property(GLOBAL APPEND PROPERTY KUMIR2_STATIC_PLUGIN_TARGETS ${PARSED_ARGS_NAME})
+    endif()
+    add_library(${PARSED_ARGS_NAME} ${KUMIR2_LIBRARY_TYPE} ${PARSED_ARGS_SOURCES})
     if(PARSED_ARGS_LIBRARIES)
         target_link_libraries(${PARSED_ARGS_NAME} ${PARSED_ARGS_LIBRARIES})
     endif(PARSED_ARGS_LIBRARIES)
@@ -299,6 +388,8 @@ function(kumir2_add_actor)
 
     kumir2_add_plugin(
         NAME        "${PLUGIN_NAME_PREFIX}${PARSED_ARGS_NAME}"
+        CLASS       "Actor${PARSED_ARGS_NAME}::${PARSED_ARGS_NAME}Plugin"
+        HEADER      "${PLUGIN}.h"
         SOURCES     ${PARSED_ARGS_SOURCES}
                     ${SOURCES_GENERATED}
                     ${MOC_SOURCES_GENERATED}
@@ -393,10 +484,47 @@ function(kumir2_add_launcher)
         else()
             list(APPEND QT_LIBRARIES ${QT_QTMAIN_LIBRARY})
         endif()
+    elseif(EMSCRIPTEN)
+        # Generates the HTML page and JavaScript loader next to the .wasm file
+        qt_add_executable(${PARSED_ARGS_NAME} ${LAUNCHER_SOURCES} ${QRC_SRC})
+        target_compile_definitions(${PARSED_ARGS_NAME} PRIVATE KUMIR2_WASM_LAUNCHER_NAME="${PARSED_ARGS_NAME}")
     else()
         add_executable(${PARSED_ARGS_NAME} ${LAUNCHER_SOURCES} ${QRC_SRC})
     endif()
-    target_link_libraries(${PARSED_ARGS_NAME} ${QT_LIBRARIES} ExtensionSystem)
+    # qt_add_executable uses keyword signature of target_link_libraries, it can not be mixed with plain one
+    if(EMSCRIPTEN)
+        set(LAUNCHER_LINK_SCOPE PRIVATE)
+    else()
+        set(LAUNCHER_LINK_SCOPE)
+    endif()
+    target_link_libraries(${PARSED_ARGS_NAME} ${LAUNCHER_LINK_SCOPE} ${QT_LIBRARIES} ExtensionSystem)
+    if(KUMIR2_STATIC_PLUGINS)
+        # Link all plugins built so far and register them before loading
+        get_property(STATIC_PLUGINS GLOBAL PROPERTY KUMIR2_STATIC_PLUGIN_TARGETS)
+        set(REGISTRY_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PARSED_ARGS_NAME}_static_plugins.cpp")
+        set(REGISTRY_DECLS "")
+        set(REGISTRY_CALLS "")
+        foreach(PLUGIN_TARGET ${STATIC_PLUGINS})
+            string(APPEND REGISTRY_DECLS "extern \"C\" ExtensionSystem::KPlugin *kumir2_static_plugin_factory_${PLUGIN_TARGET}();\n")
+            string(APPEND REGISTRY_CALLS "\t\tExtensionSystem::PluginManager::registerStaticPlugin(\"${PLUGIN_TARGET}\", &kumir2_static_plugin_factory_${PLUGIN_TARGET});\n")
+        endforeach()
+        file(WRITE "${REGISTRY_FILE}.in"
+            "// Generated by kumir2_add_launcher\n"
+            "#include <kumir2-libs/extensionsystem/pluginmanager.h>\n"
+            "${REGISTRY_DECLS}"
+            "namespace {\n"
+            "struct Kumir2StaticPlugins {\n"
+            "\tKumir2StaticPlugins()\n"
+            "\t{\n"
+            "${REGISTRY_CALLS}"
+            "\t}\n"
+            "} kumir2StaticPlugins;\n"
+            "}\n"
+        )
+        configure_file("${REGISTRY_FILE}.in" "${REGISTRY_FILE}" COPYONLY)
+        target_sources(${PARSED_ARGS_NAME} PRIVATE "${REGISTRY_FILE}")
+        target_link_libraries(${PARSED_ARGS_NAME} ${LAUNCHER_LINK_SCOPE} ${STATIC_PLUGINS})
+    endif()
     set_property(TARGET ${PARSED_ARGS_NAME} APPEND PROPERTY COMPILE_FLAGS "${KUMIR2_CXXFLAGS} ${KUMIR2_CXXFLAGS_${CMAKE_BUILD_TYPE}}")
     set_property(TARGET ${PARSED_ARGS_NAME} APPEND PROPERTY LINK_FLAGS ${KUMIR2_LAUNCHER_LINKER_FLAGS})
     set_property(TARGET ${PARSED_ARGS_NAME} APPEND PROPERTY COMPILE_DEFINITIONS CONFIGURATION_TEMPLATE="${PARSED_ARGS_CONFIGURATION}")

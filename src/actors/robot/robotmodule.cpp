@@ -7,6 +7,7 @@ You should change it corresponding to functionality.
 */
 
 #include "rfield.h"
+#include <kumir2/qtcompat_gui.h>
 #include "cfield.h"
 #include "srobot.h"
 #include "robotmodule.h"
@@ -281,7 +282,7 @@ RobotModule::acceptableCommandLineParameters()
 	);
 	params.append(
 		ExtensionSystem::CommandLineParameter(
-			false, 255, "robotdump", tr("Robot field output file name"),
+			false, QChar(255), "robotdump", tr("Robot field output file name"),
 			QVariant::String, false
 		)
 	);
@@ -332,14 +333,22 @@ QString RobotModule::initialize(
 	if (!fName.isEmpty()) {
 		int err = LoadFromFile(fName);
 		if (err != 0) {
+#if QT_VERSION >= 0x060000
+			return "Error loading: '" + fName + "', code=" + QChar::fromLatin1(char(err));
+#else
 			return "Error loading: '" + fName + "', code=" + err;
+#endif
 		}
 	} else if (RobotModule::robotSettings()->value("Robot/SFF").isValid()) {
 		QString sName = RobotModule::robotSettings()->
 			value("Robot/SFF").toString();
 		int err = LoadFromFile(sName);
 		if (err != 0) {
+#if QT_VERSION >= 0x060000
+			qDebug() << "Error loading: '" + sName + "', code=" + QChar::fromLatin1(char(err));
+#else
 			qDebug() << "Error loading: '" + sName + "', code=" + err;
+#endif
 			createEmptyField(7, 7);
 		}
 	}
@@ -381,7 +390,7 @@ void RobotModule::runGoUp()
 	if (animation) {
 		msleep(AnimTime);
 	}
-	msleep(qrand() % 10);
+	msleep(Kumir2Qt::rand() % 10);
 	mutex.unlock();
 	// view->update();
 	return;
@@ -411,7 +420,7 @@ void RobotModule::runGoDown()
 	if (animation) {
 		msleep(AnimTime);
 	}
-	msleep(qrand() % 10);
+	msleep(Kumir2Qt::rand() % 10);
 	mutex.unlock();
 	return;
 }
@@ -441,7 +450,7 @@ void RobotModule::runGoLeft()
 	if (animation) {
 		msleep(AnimTime);
 	}
-	msleep(qrand() % 10);
+	msleep(Kumir2Qt::rand() % 10);
 	mutex.unlock();
 	return;
 }
@@ -471,7 +480,7 @@ void RobotModule::runGoRight()
 	if (animation) {
 		msleep(AnimTime);
 	}
-	msleep(qrand() % 10);
+	msleep(Kumir2Qt::rand() % 10);
 	mutex.unlock();
 
 	return;
@@ -1093,13 +1102,13 @@ void RobotModule::prepareNewWindow()
 	NewWindow->setLayout(nwl);
 	NewWindow->setWindowModality(Qt::WindowModal);
 	NewWindow->setWindowTitle(QString::fromUtf8("Новая обстановка"));
-	QLabel *lKol = new QLabel(QString::fromUtf8("Количество:"), NewWindow, 0);
+	QLabel *lKol = new QLabel(QString::fromUtf8("Количество:"), NewWindow, Qt::WindowFlags());
 	nwl->addWidget(lKol, 0, 0, 1, 2, Qt::AlignCenter);
 
-	QLabel *lXSize = new QLabel(QString::fromUtf8("Столбцов"), NewWindow, 0);
+	QLabel *lXSize = new QLabel(QString::fromUtf8("Столбцов"), NewWindow, Qt::WindowFlags());
 	nwl->addWidget(lXSize, 1, 1, 1, 1, Qt::AlignCenter);
 
-	QLabel *lYSize = new QLabel(QString::fromUtf8("Строк"), NewWindow, 0);
+	QLabel *lYSize = new QLabel(QString::fromUtf8("Строк"), NewWindow, Qt::WindowFlags());
 	nwl->addWidget(lYSize, 1, 0, 1, 1, Qt::AlignCenter);
 
 	NewWindow->setFixedSize(250, 150);
@@ -1239,7 +1248,7 @@ int RobotModule::SaveToFile(QString p_FileName)
 void RobotModule::createRescentMenu()
 {
 	QString sFiles = mySettings()->value("Robot/LastFiles").toString();
-	QStringList lFiles = sFiles.split(';', QString::SkipEmptyParts);
+	QStringList lFiles = sFiles.split(';', Kumir2Qt::SkipEmptyParts);
 	qDebug() << lFiles;
 
 	rescentMenu->clear();
@@ -1378,7 +1387,7 @@ void RobotModule::updateLastFiles(QString newFile)
 	}
 
 	QString sFiles = RobotModule::robotSettings()->value("Robot/LastFiles").toString();
-	QStringList lFiles = sFiles.split(';', QString::SkipEmptyParts);
+	QStringList lFiles = sFiles.split(';', Kumir2Qt::SkipEmptyParts);
 	if (!lFiles.contains(newFile)) {
 		lFiles.prepend(newFile);
 		lFiles = lFiles.mid(0, 11);

@@ -1,4 +1,5 @@
 #include "paintertools.h"
+#include <QRegExp>
 #include <QMap>
 
 namespace ActorPainter
@@ -7,7 +8,11 @@ namespace ActorPainter
 extern QColor parseColor(const QString &css)
 {
 	QColor result = QColor::Invalid;
+#if QT_VERSION >= 0x060000
+	QString normCSS = QRegExp("\\s").replaceIn(css.toLower(), QString());
+#else
 	QString normCSS = css.toLower().remove(QRegExp("\\s"));
+#endif
 	QRegExp rxCSS("(rgb|rgba|cmyk|cmyka|hsl|hsla|hsv|hsva)\\((.*)\\)");
 	QMap<QString, QString> ruNames;
 	ruNames[QString::fromUtf8("белый")] = "white";

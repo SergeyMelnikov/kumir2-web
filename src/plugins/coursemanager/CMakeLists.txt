@@ -27,6 +27,8 @@ kumir2_wrap_ui(UI_SOURCES ${FORMS})
 
 kumir2_add_plugin(
 	NAME        CourseManager
+	CLASS       CourseManager::Plugin
+	HEADER      coursemanager_plugin.h
 	SOURCES     ${MOC_SOURCES} ${SOURCES} ${UI_SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} ExtensionSystem DataFormats Widgets
 )

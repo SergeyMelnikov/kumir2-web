@@ -1,4 +1,5 @@
 #include "rfield.h"
+#include <kumir2/qtcompat_gui.h>
 #include "cfield.h"
 #include "robotview.h"
 #include "robotmodule.h"
@@ -128,7 +129,7 @@ void RobotView::mouseMoveEvent(QMouseEvent *event)
 
 void RobotView::wheelEvent(QWheelEvent *event)
 {
-	float numDegrees = event->delta() / 8;
+	float numDegrees = Kumir2Qt::wheelDelta(event) / 8;
 	qDebug() << "wheel: " << numDegrees;
 	qDebug() << "Scale: " << c_scale;
 

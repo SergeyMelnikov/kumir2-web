@@ -27,6 +27,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QTextCodec>
+#include <kumir2/qtcompat.h>
 #include <QApplication>
 
 
@@ -127,11 +128,16 @@ void EditorInstance::loadDocument(QIODevice *device, const QString &fileNameSuff
 		if (!codec) {
 			codec = QTextCodec::codecForLocale();
 		}
+#if QT_VERSION >= 0x060000
+		data.hasHiddenText = false;
+		data.visibleText = Kumir2Qt::decodeText(bytes, codec, true);
+#else
 		QTextStream ts(bytes);
 		ts.setCodec(codec);
 		ts.setAutoDetectUnicode(true);
 		data.hasHiddenText = false;
 		data.visibleText = ts.readAll();
+#endif
 	}
 	data.canonicalSourceLanguageName = fileNameSuffix;
 	data.sourceUrl = sourceUrl;
@@ -330,7 +336,11 @@ void EditorInstance::loadMacros()
 		PluginManager::instance()->loadedConstPlugins("Actor*");
 
 	foreach (const KPlugin *plugin, actorPlugins) {
+#if QT_VERSION >= 0x060000
+		ActorInterface *actor = qobject_cast<ActorInterface *>(const_cast<KPlugin *>(plugin)); // Qt5 cast away constness implicitly
+#else
 		ActorInterface *actor = qobject_cast<ActorInterface *>(plugin);
+#endif
 		QString canonicalName = actorCanonicalName<QString>(actor->asciiModuleName());
 		canonicalName.remove(" ");
 		const QString actorMacrosFileName = plugin_->myResourcesDir().absoluteFilePath(
@@ -351,7 +361,11 @@ void EditorInstance::loadMacros()
 		std::deque<QString> availableActorNames;
 
 		foreach (const KPlugin *plugin, actorPlugins) {
+#if QT_VERSION >= 0x060000
+			ActorInterface *actor = qobject_cast<ActorInterface *>(const_cast<KPlugin *>(plugin)); // Qt5 cast away constness implicitly
+#else
 			ActorInterface *actor = qobject_cast<ActorInterface *>(plugin);
+#endif
 			if (actor && !actor->localizedModuleName(QLocale::Russian).startsWith("_")) {
 				availableActorNames.push_back(Shared::actorCanonicalName(actor->localizedModuleName(QLocale::Russian)));
 			}
@@ -409,7 +423,7 @@ void EditorInstance::updateInsertMenu()
 		int groupNo = m->showInLastBlock ? 1 : 0;
 		groups[groupNo].append(m);
 	}
-	qSort(groups[1]);
+	Kumir2Qt::qtSort(groups[1]);
 	for (int z = 0; z < 2; ++z) {
 		QList<QSharedPointer<Macro> > group = groups[z];
 		if (1 == z && groups[1].size() > 0) {
@@ -1235,6 +1249,14 @@ void EditorInstance::saveDocument(QIODevice *device, QString *error)
 		QByteArray bytes = analizerPlugin_->sourceFileHandler()->toBytes(documentContents());
 		device->write(bytes);
 	} else {
+#if QT_VERSION >= 0x060000
+		// Qt6 QTextStream can not write CP1251
+#ifdef Q_OS_WIN32
+		device->write(Kumir2Qt::encodeText(documentContents().visibleText, "CP1251", false));
+#else
+		device->write(Kumir2Qt::encodeText(documentContents().visibleText, "UTF-8", true));
+#endif
+#else
 		QTextStream ts(device);
 #ifdef Q_OS_WIN32
 		ts.setCodec("CP1251");
@@ -1244,6 +1266,7 @@ void EditorInstance::saveDocument(QIODevice *device, QString *error)
 #endif
 		ts << documentContents().visibleText;
 		ts.flush();
+#endif
 	}
 	notSaved_ = false;
 	checkForClean();

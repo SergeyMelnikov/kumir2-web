@@ -5,6 +5,7 @@
 #include "docbookmodel.h"
 
 #include <QXmlDefaultHandler>
+#include <QMap>
 
 
 #ifdef DOCBOOKVIEWER_LIBRARY

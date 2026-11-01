@@ -91,7 +91,11 @@ public:
 	QStringList isps;
 
 	//Обстановки для каждого исполнителя fields[исп,обст]
+#if QT_VERSION >= 0x060000
+	QMultiMap<QString, QString> fields; // Qt6 QMap does not allow multiple values per key
+#else
 	QMap<QString, QString> fields;
+#endif
 };
 
 

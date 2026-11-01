@@ -80,7 +80,11 @@ bool Module::isEnabledFor(const ModulePtr currentModule) const
 			foreach (AST::ModuleWPtr reference, header.usedBy) {
 				bool usedByUserMainModule =
 					reference &&
+#if QT_VERSION >= 0x060000
+					reference.toStrongRef()->header.type == ModTypeUserMain;
+#else
 					reference.data()->header.type == ModTypeUserMain;
+#endif
 				if (usedByUserMainModule) {
 					return true;
 				}
@@ -91,7 +95,11 @@ bool Module::isEnabledFor(const ModulePtr currentModule) const
 	bool enabled = currentModule.data() == this;
 	if (!enabled) {
 		foreach (AST::ModuleWPtr reference, header.usedBy) {
+#if QT_VERSION >= 0x060000
+			if (reference && currentModule && reference.toStrongRef().data() == currentModule.data()) {
+#else
 			if (reference && currentModule && reference.data() == currentModule.data()) {
+#endif
 				enabled = true;
 				break;
 			}

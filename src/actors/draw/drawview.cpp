@@ -1,4 +1,5 @@
 #include "drawview.h"
+#include <kumir2/qtcompat_gui.h>
 #include "drawmodule.h"
 
 #include <QMutex>
@@ -183,7 +184,7 @@ void DrawView::setNet()
 
 void    DrawView::wheelEvent(QWheelEvent *event)
 {
-	float numDegrees = event->delta() / 8;
+	float numDegrees = Kumir2Qt::wheelDelta(event) / 8;
 	qDebug() << "whell:" << numDegrees;
 	//        c_scale=c_scale*0.8;
 	qDebug() << "Scale" << c_scale;

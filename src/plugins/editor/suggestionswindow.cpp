@@ -1,4 +1,5 @@
 #include "suggestionswindow.h"
+#include <kumir2/qtcompat_gui.h>
 #include "ui_suggestionswindow.h"
 #include "settingspage.h"
 
@@ -245,7 +246,7 @@ void SuggestionsWindow::init(
 		const Shared::Analizer::Suggestion &s = suggestions.at(index);
 		SuggestionItem *item = new SuggestionItem(s, this, editorPlugin, helpViewer);
 		itemModel_->appendRow(item);
-		prefWidth = qMax(prefWidth, 100 + fm.width(s.value));
+		prefWidth = qMax(prefWidth, 100 + Kumir2Qt::textWidth(fm, s.value));
 	}
 	int width = qMax(qMin(400, prefWidth), 150);
 	int height = qMin(prefHeight, 400);

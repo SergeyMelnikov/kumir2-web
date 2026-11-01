@@ -115,13 +115,22 @@ void OvenTimer::draw(QPainter *painter)
 	static const int triangle[3][2] = {
 		{-2, -49}, {+2, -49}, {0, -47}
 	};
+#if QT_VERSION >= 0x060000
+	QPen thickPen(palette().windowText(), 1.5);
+	QPen thinPen(palette().windowText(), 0.5);
+#else
 	QPen thickPen(palette().foreground(), 1.5);
 	QPen thinPen(palette().foreground(), 0.5);
+#endif
 	QColor niceBlue(200, 180, 130);
 	QColor sand(220, 190, 150);
 	QColor sandLight(244, 229, 111);
 	painter->setPen(thinPen);
+#if QT_VERSION >= 0x060000
+	painter->setBrush(palette().windowText());
+#else
 	painter->setBrush(palette().foreground());
+#endif
 	painter->drawPolygon(QPolygon(3, &triangle[0][0]));
 	QConicalGradient coneGradient(0, 0, -90.0);
 	coneGradient.setColorAt(0.0, sand);
@@ -151,7 +160,11 @@ void OvenTimer::draw(QPainter *painter)
 	qDebug() << "Duration " << duration();
 	painter->setBrush(knobGradient);
 	painter->setPen(thinPen);
+#if QT_VERSION >= 0x060000
+	painter->drawRoundedRect(QRectF(-7, -25, 14, 50), 99, 49, Qt::RelativeSize); // as Qt5 drawRoundRect
+#else
 	painter->drawRoundRect(-7, -25, 14, 50, 99, 49);
+#endif
 
 	for (int i = 0; i <= 359; ++i) {
 		if (i % 60 == 0) {
@@ -172,6 +185,8 @@ void OvenTimer::draw(QPainter *painter)
 
 
 
+#ifndef KUMIR2_STATIC_PLUGINS
+// Same as linkLight of Widgets library; static build links that one only
 linkLight::linkLight(QWidget *parent): QWidget(parent)
 {
 	posX = 1;
@@ -223,6 +238,7 @@ void linkLight::paintEvent(QPaintEvent *event)
 
 
 };
+#endif // KUMIR2_STATIC_PLUGINS
 
 
 

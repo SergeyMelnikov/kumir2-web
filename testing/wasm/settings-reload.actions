@@ -1,0 +1,4 @@
+wait 2
+reload
+wait 2
+shot settings-after-reload

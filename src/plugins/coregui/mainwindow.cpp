@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include <QActionGroup>
 #include "plugin.h"
 #include "terminal.h"
 #include "side.h"
@@ -28,11 +29,40 @@
 #include <QSharedPointer>
 #include <QMenuBar>
 #include <QFileDialog>
+#if QT_VERSION >= 0x060000
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
 #include <QMessageBox>
 #include <QPushButton>
 #include <QMimeData>
 #include <QDebug>
+#ifdef Q_OS_WASM
+#include <QPointer>
+#include <QTemporaryDir>
+#include <emscripten.h>
+#ifdef KUMIR2_WASM_ASYNCIFY
+// Unlike QFileDialog::saveFileContent, the native browser picker can report
+// cancellation and write completion. Keep the editor dirty until it succeeds.
+EM_ASYNC_JS(int, saveWasmFile, (const char *data, int size, const char *name), {
+    const bytes = HEAPU8.slice(data, data + size);
+    const suggestedName = UTF8ToString(name);
+    try {
+        const handle = await window.showSaveFilePicker({ suggestedName });
+        const stream = await handle.createWritable();
+        await stream.write(bytes);
+        await stream.close();
+        return 1;
+    } catch (error) {
+        if (error.name === "AbortError")
+            return 0;
+        console.warn("Browser file save failed", error);
+        return -1;
+    }
+});
+#endif
+#endif
 
 namespace CoreGUI
 {
@@ -840,6 +870,11 @@ bool MainWindow::saveCurrentFile()
 	if (!twe->editor()) {
 		return true;
 	}
+#ifdef Q_OS_WASM
+	// A browser download is required even for an already named document;
+	// writing its in-memory upload path would not save it on the user's disk.
+	return saveCurrentFileAs();
+#else
 	const QString fileName = twe->editor()->documentContents().sourceUrl.toLocalFile();
 	bool result = 0;
 	if (fileName.isEmpty()) {
@@ -851,6 +886,7 @@ bool MainWindow::saveCurrentFile()
 		setTitleForTab(tabWidget_->currentIndex());
 	}
 	return result;
+#endif
 }
 
 void MainWindow::handleTabTitleChanged()
@@ -1262,6 +1298,55 @@ bool MainWindow::isPresentationMode() const
 
 bool MainWindow::saveCurrentFileAs()
 {
+#ifdef Q_OS_WASM
+	TabWidgetElement *twe = currentTab();
+	if (!twe || !twe->editor()) {
+		return false;
+	}
+	QString fileName = QFileInfo(twe->editor()->documentContents().sourceUrl.toLocalFile()).fileName();
+	if (fileName.isEmpty()) {
+		const QString suffix = twe->type == Program
+			? ExtensionSystem::PluginManager::instance()->findPlugin<Shared::AnalizerInterface>()->defaultDocumentFileNameSuffix()
+			: QString("txt");
+		fileName = suggestNewFileName(suffix, twe->editor()->analizer());
+	}
+	QByteArray contents;
+	const Shared::Analizer::SFData original = twe->editor()->documentContents();
+	if (twe->type == Program) {
+		Shared::AnalizerInterface *analizer =
+			ExtensionSystem::PluginManager::instance()->findPlugin<Shared::AnalizerInterface>();
+		contents = analizer->sourceFileHandler()->toBytes(original);
+	} else {
+		contents = Kumir2Qt::encodeText(original.visibleText, "UTF-8", true);
+	}
+	QPointer<TabWidgetElement> savedTab(twe);
+#ifdef KUMIR2_WASM_ASYNCIFY
+	if (EM_ASM_INT({ return typeof window.showSaveFilePicker === "function"; })) {
+		const int result = saveWasmFile(contents.constData(), contents.size(), fileName.toUtf8().constData());
+		if (result <= 0) {
+			if (result < 0) {
+				QMessageBox::critical(this, tr("Can't save file"), tr("The browser could not save the file."));
+			}
+			return false;
+		}
+	} else
+#endif
+	{
+		// Browsers without File System Access initiate a download. They do
+		// not expose completion or cancellation of an external download UI.
+		QFileDialog::saveFileContent(contents, fileName, this);
+	}
+	if (savedTab && savedTab->editor()) {
+		const Shared::Analizer::SFData current = savedTab->editor()->documentContents();
+		if (current.visibleText == original.visibleText && current.hiddenText == original.hiddenText
+			&& current.protectedLineNumbers == original.protectedLineNumbers
+			&& current.hiddenTextSignature == original.hiddenTextSignature) {
+			savedTab->editor()->setNotModified();
+		}
+	}
+	setTitleForTab(tabWidget_->currentIndex());
+	return true;
+#else
 	using namespace ExtensionSystem;
 	using namespace Shared;
 	AnalizerInterface *analizer =
@@ -1310,6 +1395,7 @@ bool MainWindow::saveCurrentFileAs()
 		}
 	}
 	return false;
+#endif
 }
 
 bool MainWindow::saveCurrentFileTo(const QString &fileName)
@@ -1729,7 +1815,11 @@ void MainWindow::loadSettings(const QStringList &keys)
 			if (r.topLeft() != QPoint(-1, -1)) {
 				ps = r.topLeft();
 			} else {
+#if QT_VERSION >= 0x060000
+				const QSize screenSize = QGuiApplication::primaryScreen()->availableGeometry().size();
+#else
 				const QSize screenSize = QApplication::desktop()->availableGeometry().size();
+#endif
 				int x = screenSize.width() - r.width();
 				int y = screenSize.height() - r.height();
 				x /= 2;
@@ -1769,7 +1859,11 @@ void MainWindow::loadSettings(const QStringList &keys)
 
 void MainWindow::setFirstTimeWindowLayout()
 {
+#if QT_VERSION >= 0x060000
+	const QRect workspaceSize = QGuiApplication::primaryScreen()->availableGeometry();
+#else
 	const QRect workspaceSize = QApplication::desktop()->availableGeometry();
+#endif
 	bool maximizeWindow =
 		workspaceSize.width() <= 1280 || workspaceSize.height() <= 700;
 	if (maximizeWindow) {
@@ -2102,6 +2196,32 @@ void MainWindow::fileOpen()
 	}
 	filters << tr("All files (*)");
 	const QString filter = filters.join(";;");
+#ifdef Q_OS_WASM
+	QPointer<MainWindow> window(this);
+	QFileDialog::getOpenFileContent(filter,
+		[window](const QString &fileName, const QByteArray &contents) {
+			if (!window || fileName.isEmpty()) {
+				return;
+			}
+			// Keep each upload in its own directory so equal basenames do not
+			// overwrite earlier uploads or files bundled with the application.
+			QTemporaryDir directory(QDir::tempPath() + "/kumir2-upload-XXXXXX");
+			if (!directory.isValid()) {
+				QMessageBox::critical(window, tr("Can't open file"), tr("Can't create temporary directory"));
+				return;
+			}
+			const QString path = directory.filePath(QFileInfo(fileName).fileName());
+			QFile file(path);
+			if (!file.open(QIODevice::WriteOnly) || file.write(contents) != contents.size()) {
+				QMessageBox::critical(window, tr("Can't open file"), file.errorString());
+				return;
+			}
+			file.close();
+			if (window->loadFromUrl(QUrl::fromLocalFile(path), false)) {
+				directory.setAutoRemove(false);
+			}
+		}, this);
+#else
 	const QString recent = m_plugin->mySettings()->value(Plugin::RecentFileKey, QDir::currentPath()).toString();
 	QString fileName = QFileDialog::getOpenFileName(this,
 			tr("Load file..."),
@@ -2113,6 +2233,7 @@ void MainWindow::fileOpen()
 		addToRecent(fileName);
 		loadFromUrl(QUrl::fromLocalFile(fileName), true);
 	}
+#endif
 }
 
 

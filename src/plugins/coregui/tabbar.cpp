@@ -1,4 +1,5 @@
 #include "tabbar.h"
+#include <kumir2/qtcompat_gui.h>
 #include <QVariant>
 #include <QPainter>
 #include <QAction>
@@ -21,7 +22,7 @@ TabBar::TabBar(QWidget *parent) : QTabBar(parent)
 		QFont f(font());
 		f.setPixelSize(10);
 		f.setBold(true);
-		int w = QFontMetrics(f).width(text);
+		int w = Kumir2Qt::textWidth(QFontMetrics(f), text);
 		QImage numberImageActive(16, 16, QImage::Format_ARGB32);
 		numberImageActive.fill(0);
 		QPainter p(&numberImageActive);

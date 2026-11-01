@@ -1,4 +1,5 @@
 #include "coursemanager_window.h"
+#include <kumir2/qtcompat.h>
 #include "ui_coursemanager_window.h"
 
 #include <kumir2/browserinterface.h>
@@ -166,7 +167,7 @@ void MainWindowTask::updateLastFiles(const QString newFile)
 	if (lastFiles.indexOf(newFile) < 0) {
 		lastFiles.prepend(newFile);
 	}
-	int max_fid = std::min(lastFiles.count(), 10);
+	int max_fid = std::min(int(lastFiles.count()), 10);
 	QString sett = "";
 	for (int i = 0; i < max_fid; i++) {
 		sett += lastFiles.at(i) + ";";
@@ -588,7 +589,11 @@ void MainWindowTask::startTask()
 		task.fields.clear();
 		for (int j = 0; j < t_fields.count(); j++) {
 			qDebug() << "Cur Dir" << curDir;
+#if QT_VERSION >= 0x060000
+			task.fields.insert(task.isps[i], curDir + '/' + t_fields[j]);
+#else
 			task.fields.insertMulti(task.isps[i], curDir + '/' + t_fields[j]);
+#endif
 			qDebug() << curDir + '/' + t_fields[j];
 
 		};
@@ -960,7 +965,7 @@ QString MainWindowTask::loadTestAlg(QString file_name)
 		return "";
 	};
 	QTextStream ts(&file);
-	ts.setCodec("UTF-16LE");
+	Kumir2Qt::setStreamCodec(ts, "UTF-16LE");
 	QString testalg = ts.readAll();
 	file.close();
 

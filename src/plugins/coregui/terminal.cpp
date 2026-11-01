@@ -1,4 +1,5 @@
 #include "terminal.h"
+#include <kumir2/qtcompat.h>
 #include "terminal_plane.h"
 #include "terminal_onesession.h"
 
@@ -357,7 +358,7 @@ void Term::input(const QString &format)
 	}
 	OneSession *lastSession = sessions_.last();
 
-	inputFormats_ = format.split(";", QString::SkipEmptyParts);
+	inputFormats_ = format.split(";", Kumir2Qt::SkipEmptyParts);
 	inputValues_.clear();
 
 	lastSession->input(format);
@@ -464,7 +465,7 @@ void Term::saveText(const QString &suggestedFileName, const QString &text)
 		QFile f(fileName);
 		if (f.open(QIODevice::WriteOnly)) {
 			QTextStream ts(&f);
-			ts.setCodec("UTF-8");
+			Kumir2Qt::setStreamCodec(ts, "UTF-8");
 			ts.setGenerateByteOrderMark(true);
 			ts << text;
 			f.close();

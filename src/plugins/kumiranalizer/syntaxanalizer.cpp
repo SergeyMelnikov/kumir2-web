@@ -1,4 +1,5 @@
 #include "syntaxanalizer.h"
+#include <kumir2/qtcompat.h>
 #include "lexer.h"
 #include <limits>
 #include <stack>
@@ -14,7 +15,9 @@
 
 #include <QStack>
 #include <QCoreApplication>
+#ifndef Q_OS_WASM
 #include <QProcess>
+#endif
 #include <QDebug>
 
 using namespace Shared;
@@ -906,7 +909,7 @@ SyntaxAnalizer::suggestValueAutoComplete(
 		std::for_each(enabledModules.begin(), enabledModules.end(),
 		[&algs](AST::ModulePtr p) {
 			std::list<AST::AlgorithmPtr> modulePublicAlgorithms =
-				p->header.algorhitms.toStdList();
+				Kumir2Qt::toStdList(p->header.algorhitms);
 			std::copy(modulePublicAlgorithms.begin(), modulePublicAlgorithms.end(),
 				std::back_inserter(algs));
 		});
@@ -1207,7 +1210,7 @@ void SyntaxAnalizer::buildTables(bool isInternalBuild)
 
 	// Find and load unresolved imports
 	for (int i = 0; i < unresolvedImports_.size(); i++) {
-		const QString name = unresolvedImports_.toList()[i];
+		const QString name = Kumir2Qt::setToList(unresolvedImports_)[i];
 		QString error;
 		if (name.endsWith(".kod")) {
 			QString canonicalName = name;
@@ -1278,7 +1281,7 @@ void SyntaxAnalizer::buildTables(bool isInternalBuild)
 
 	// Set errors for imports that could not be resolved
 	for (int i = 0; i < unresolvedImports_.size(); i++) {
-		const QString name = unresolvedImports_.toList()[i];
+		const QString name = Kumir2Qt::setToList(unresolvedImports_)[i];
 
 		for (int j = 0; j < statements_.size(); j++) {
 			if (statements_[j].type == Shared::LxPriImport && !statements_[j].hasError()) {
@@ -1624,8 +1627,14 @@ void SyntaxAnalizer::parseImport(int str)
 			if (kumFile.exists()) {
 				if (!binFile.exists() || binFile.lastModified() < kumFile.lastModified()) {
 					// Run kumir2-bc to create (or update) binary module
+#ifdef Q_OS_WASM
+					// No processes in a browser: same as failure to start kumir2-bc
+					Q_UNUSED(kumir2bc);
+					int status = -2;
+#else
 					int status = QProcess::execute(kumir2bc, QStringList()
 							<< "--debuglevel=2" << kumFile.absoluteFilePath());
+#endif
 					if (status == -2) {
 						st.data[1]->error = _("Can't run kumir2-bc to compile this module");
 						return;
@@ -1814,7 +1823,7 @@ QStringList SyntaxAnalizer::checkForConflictingNames(const ModulePtr &moduleToCh
 			}
 		}
 	}
-	return result.toList();
+	return Kumir2Qt::setToList(result);
 }
 
 AST::ModulePtr SyntaxAnalizer::loadKodFile(const QString &name, QString &error)
@@ -1930,11 +1939,16 @@ void SyntaxAnalizer::parseVarDecl(int str)
 	AST::StatementWPtr p = st.statement.toWeakRef();
 	while (p) {
 		QString error;
-		if (p.data()->type == AST::StLoop) {
+#if QT_VERSION >= 0x060000
+		const AST::StatementPtr pp = p.toStrongRef();
+#else
+		AST::Statement *const pp = p.data();
+#endif
+		if (pp->type == AST::StLoop) {
 			error = _("Can't declare variable in loop");
-		} else if (p.data()->type == AST::StIfThenElse) {
+		} else if (pp->type == AST::StIfThenElse) {
 			error = _("Can't declare variable in condidion");
-		} else if (p.data()->type == AST::StSwitchCaseElse) {
+		} else if (pp->type == AST::StSwitchCaseElse) {
 			error = _("Can't declare variable in switch");
 		}
 		if (error.length() > 0) {
@@ -1943,7 +1957,7 @@ void SyntaxAnalizer::parseVarDecl(int str)
 				Lexem::AsIs);
 			return;
 		}
-		p = p.data()->parent;
+		p = pp->parent;
 	}
 
 	AST::AlgorithmPtr  alg = st.alg;
@@ -3807,7 +3821,7 @@ QList<AST::VariablePtr> SyntaxAnalizer::parseVariables(int statementIndex, Varia
 					return result;
 				}
 				int maxDim = 0;
-				QVariant constValue = parseConstant(initValue.toStdList(),
+				QVariant constValue = parseConstant(Kumir2Qt::toStdList(initValue),
 						var->baseType.kind,
 						maxDim);
 				if (constValue == QVariant::Invalid) {
@@ -5002,7 +5016,7 @@ AST::ExpressionPtr  SyntaxAnalizer::parseExpression(
 			}
 
 
-			AST::ExpressionPtr  operand = parseSimpleName(block.toStdList(),
+			AST::ExpressionPtr  operand = parseSimpleName(Kumir2Qt::toStdList(block),
 					mod,
 					alg);
 			if (!operand) {
@@ -5919,7 +5933,7 @@ AST::ExpressionPtr  SyntaxAnalizer::parseSimpleName(const std::list<LexemPtr> &l
 		result->kind = AST::ExprFunctionCall;
 		result->baseType = AST::TypeInteger;
 		result->dimension = 0;
-		result->lexems = QList<LexemPtr>::fromStdList(lexems);
+		result->lexems = Kumir2Qt::listFromStdList(lexems);
 		const AST::ModulePtr  dummy;
 		AST::ModulePtr dummy2;
 		QVariantList dummyTemplateParameters;
@@ -5933,7 +5947,11 @@ AST::ExpressionPtr  SyntaxAnalizer::parseSimpleName(const std::list<LexemPtr> &l
 		int err = 0;
 		AST::VariableBaseType type = testConst(lexems, err);
 		if (err) {
+#if QT_VERSION >= 0x060000
+			lexems.front()->error = QString(QChar::fromLatin1(char(err))); // as Qt5 QString::operator=(char)
+#else
 			lexems.front()->error = err;
+#endif
 			return AST::ExpressionPtr();
 		} else {
 			result = AST::ExpressionPtr(new AST::Expression);

@@ -1,4 +1,5 @@
 #include "appmanager.h"
+#include <kumir2/qtcompat.h>
 #include "procmanager.h"
 #include "messager.h"
 #include "settings.h"
@@ -53,7 +54,7 @@ void ApplicationManager::scanForApplications(
 		QFile f(appsDir.absoluteFilePath(fileName));
 		if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
 			QTextStream ts(&f);
-			ts.setCodec("UTF-8");
+			Kumir2Qt::setStreamCodec(ts, "UTF-8");
 			QStringList lines = ts.readAll().split("\n");
 			f.close();
 			ApplicationPrivate app;

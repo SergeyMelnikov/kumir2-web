@@ -1,0 +1,18 @@
+wait 6
+click 180 110
+key Control+Home
+key Control+a
+type | проверка буфера
+key Home
+key Shift+End
+key Control+c
+wait 1
+key End
+key Enter
+wait 1
+key Control+v
+wait 2
+shot pasted
+click 180 40
+wait 2
+shot toolbar-pasted

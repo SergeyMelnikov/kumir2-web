@@ -1,4 +1,5 @@
 #include "kumirprogram.h"
+#include <QActionGroup>
 #include "terminal.h"
 #include <kumir2-libs/extensionsystem/pluginmanager.h>
 #include <kumir2/actorinterface.h>

@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include <kumir2/qtcompat.h>
 #include <kumir2-libs/errormessages/errormessages.h>
 #include <QDir>
 #include <QTextStream>
@@ -100,8 +101,8 @@ void Lexer::InitNormalizator(const QString &fileName)
 	QFile kwdFile(fileName);
 	if (kwdFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QTextStream ts(&kwdFile);
-		ts.setCodec("UTF-8");
-		const QStringList lines = ts.readAll().split("\n", QString::SkipEmptyParts);
+		Kumir2Qt::setStreamCodec(ts, "UTF-8");
+		const QStringList lines = ts.readAll().split("\n", Kumir2Qt::SkipEmptyParts);
 		kwdFile.close();
 		foreach (const QString &line, lines) {
 			if (line.startsWith("#")) {
@@ -600,7 +601,11 @@ void searchUserTypeNames(QList<LexemPtr> &lexems, const QStringList &names)
 			for (int i = 0; i < names.size(); i++) {
 				const QString typeName = names[i];
 				const QRegExp rxTypeName("\\b" + typeName + "\\b");
+#if QT_VERSION >= 0x060000
+				int p = QRegExp(rxTypeName).indexIn(lx->data);
+#else
 				int p = lx->data.indexOf(rxTypeName);
+#endif
 				if (p != -1) {
 					QString left, right;
 					if (p > 0) {
@@ -844,7 +849,7 @@ QList<TextStatementPtr> Lexer::preprocessOneIncludeStatement(const TextStatement
 		newStatements.push_back(include);
 	} else {
 		QTextStream ts(&includeFile);
-		ts.setCodec("UTF-8");
+		Kumir2Qt::setStreamCodec(ts, "UTF-8");
 		ts.setAutoDetectUnicode(true);
 		const QStringList lines = ts.readAll().split("\n");
 		includeFile.close();
@@ -1392,7 +1397,11 @@ QString Lexer::testName(const QString &name)
 		QChar debug = name[pks];
 		ushort debug_code = debug.unicode();
 		Q_UNUSED(debug_code);
+#if QT_VERSION >= 0x060000
+		if (!error.isEmpty()) { // Qt5: comparison with null const char*
+#else
 		if (error > 0) {
+#endif
 			if (pks < ps) {
 				error = _("Name contains keyword");
 			}
@@ -1408,7 +1417,11 @@ QString Lexer::testName(const QString &name)
 		QChar debug = name[pks];
 		ushort debug_code = debug.unicode();
 		Q_UNUSED(debug_code);
+#if QT_VERSION >= 0x060000
+		if (!error.isEmpty()) { // Qt5: comparison with null const char*
+#else
 		if (error > 0) {
+#endif
 			if (pks < ps) {
 				error = _("Name contains keyword");
 			}

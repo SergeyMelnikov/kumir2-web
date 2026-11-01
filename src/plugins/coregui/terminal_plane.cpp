@@ -1,4 +1,5 @@
 #include "terminal_plane.h"
+#include <kumir2/qtcompat_gui.h>
 #include "terminal.h"
 #include "terminal_onesession.h"
 
@@ -466,17 +467,17 @@ QSize Plane::minimumSizeHint() const
 
 void Plane::wheelEvent(QWheelEvent *e)
 {
-	if (!terminal_->sb_vertical->isEnabled() && e->orientation() == Qt::Vertical) {
+	if (!terminal_->sb_vertical->isEnabled() && Kumir2Qt::wheelOrientation(e) == Qt::Vertical) {
 		e->ignore();
 		return;
 	}
-	if (!terminal_->sb_horizontal->isEnabled() && e->orientation() == Qt::Horizontal) {
+	if (!terminal_->sb_horizontal->isEnabled() && Kumir2Qt::wheelOrientation(e) == Qt::Horizontal) {
 		e->ignore();
 		return;
 	}
-	int degrees = e->delta() / 8;
+	int degrees = Kumir2Qt::wheelDelta(e) / 8;
 	int steps = degrees / 15;
-	QScrollBar *sb = e->orientation() == Qt::Vertical ? terminal_->sb_vertical : terminal_->sb_horizontal;
+	QScrollBar *sb = Kumir2Qt::wheelOrientation(e) == Qt::Vertical ? terminal_->sb_vertical : terminal_->sb_horizontal;
 	sb->setValue(sb->value() - steps * sb->singleStep() * 3);
 }
 

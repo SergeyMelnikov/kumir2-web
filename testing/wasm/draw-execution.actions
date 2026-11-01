@@ -1,0 +1,30 @@
+wait 7
+click 180 110
+key Control+Home
+key Control+a
+type использовать Чертежник
+key Enter
+type алг
+key Enter
+type нач
+key Enter
+type опустить перо
+key Enter
+type сместиться на вектор(2, 3)
+key Enter
+type поднять перо
+key Enter
+type вывод "чертеж готов", нс
+key Enter
+type кон
+key Enter
+wait 2
+key F9
+wait 3
+shot draw-run
+key F8
+wait 1
+shot draw-step
+key Escape
+wait 1
+shot draw-stopped

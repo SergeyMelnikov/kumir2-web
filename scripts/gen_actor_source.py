@@ -1437,7 +1437,7 @@ class PluginCppClass(CppClassBase):
     friend class %s;
     friend class %s;
     Q_OBJECT
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= 0x050000 && !defined(KUMIR2_STATIC_PLUGINS)
     Q_PLUGIN_METADATA(IID "kumir2.%s")
 #endif
     Q_INTERFACES(Shared::ActorInterface)

@@ -1,0 +1,17 @@
+wait 7
+upload /t/fixtures/robot.kum
+wait 1
+click 170 150
+key Control+End
+key Enter
+type | сохранить после отмены открытия
+key Enter
+cancel-upload
+wait 1
+click 560 405
+wait 1
+shot cancelled-upload
+key Control+n
+wait 1
+shot still-unsaved
+key Escape

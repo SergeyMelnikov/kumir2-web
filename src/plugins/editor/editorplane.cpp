@@ -1,4 +1,5 @@
 #include "editorplane.h"
+#include <kumir2/qtcompat_gui.h>
 #include "textcursor.h"
 #include "textdocument.h"
 #include "editcommands.h"
@@ -787,7 +788,7 @@ void EditorPlane::mouseMoveEvent(QMouseEvent *e)
 
 		if (text.length() > 0) {
 			QFontMetrics fm(font());
-			const uint w = fm.width(text);
+			const uint w = Kumir2Qt::textWidth(fm, text);
 			const QRect marginRect = marginBackgroundRect();
 			if (w > (uint) marginRect.width()) {
 				visibleMarginBox = true;
@@ -1230,7 +1231,7 @@ void EditorPlane::paintNewHiddenDelimeterLine(QPainter *p)
 uint EditorPlane::charWidth() const
 {
 	const QFontMetrics fm(font());
-	return qMax(0, fm.width('M'));
+	return qMax(0, Kumir2Qt::textWidth(fm, QChar('M')));
 }
 
 void EditorPlane::updateCursor()
@@ -2315,7 +2316,7 @@ void EditorPlane::paintLineNumbers(QPainter *p, const QRect &rect)
 		}
 		// Calculate number width to align it centered
 		const QString txt = QString::number(realLineNumber);
-		int textWidth = QFontMetrics(font()).width(txt);
+		int textWidth = Kumir2Qt::textWidth(QFontMetrics(font()), txt);
 		int xx = charWidth() * 3 - textWidth + lockSymbolOffset;
 		int yy = i * lineHeight();
 
@@ -2416,7 +2417,7 @@ void EditorPlane::wheelEvent(QWheelEvent *e)
 		static const int maxSize = 36;
 		QFont fnt = font();
 		int currentSize = fnt.pointSize();
-		int degrees = e->delta() / 8;
+		int degrees = Kumir2Qt::wheelDelta(e) / 8;
 		int steps = degrees / 15;
 		if (currentSize <= minSize && steps < 0) {
 			e->ignore();
@@ -2434,17 +2435,17 @@ void EditorPlane::wheelEvent(QWheelEvent *e)
 		update();
 
 	}
-	if (!editor_->scrollBar(Qt::Vertical)->isEnabled() && e->orientation() == Qt::Vertical) {
+	if (!editor_->scrollBar(Qt::Vertical)->isEnabled() && Kumir2Qt::wheelOrientation(e) == Qt::Vertical) {
 		e->ignore();
 		return;
 	}
-	if (!editor_->scrollBar(Qt::Horizontal)->isEnabled() && e->orientation() == Qt::Horizontal) {
+	if (!editor_->scrollBar(Qt::Horizontal)->isEnabled() && Kumir2Qt::wheelOrientation(e) == Qt::Horizontal) {
 		e->ignore();
 		return;
 	}
-	int degrees = e->delta() / 8;
+	int degrees = Kumir2Qt::wheelDelta(e) / 8;
 	int steps = degrees / 15;
-	QScrollBar *sb = e->orientation() == Qt::Vertical ? editor_->scrollBar(Qt::Vertical) : editor_->scrollBar(Qt::Horizontal);
+	QScrollBar *sb = Kumir2Qt::wheelOrientation(e) == Qt::Vertical ? editor_->scrollBar(Qt::Vertical) : editor_->scrollBar(Qt::Horizontal);
 	sb->setValue(sb->value() - steps * sb->singleStep() * 3);
 
 }
@@ -2684,7 +2685,7 @@ void EditorPlane::paintText(QPainter *p, const QRect &rect)
 
 			// Align character horizontally to it's position in case
 			// if various characters have different width
-			const int charW = QFontMetrics(p->font()).width(text[j]);
+			const int charW = Kumir2Qt::textWidth(QFontMetrics(p->font()), text[j]);
 			if (charW < (int)charWidth()) {
 				offset += (charWidth() - charW) / 2;
 			}

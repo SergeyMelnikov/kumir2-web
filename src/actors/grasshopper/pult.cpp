@@ -22,6 +22,8 @@
 #define TEXT_STEP 14
 
 
+#ifndef KUMIR2_STATIC_PLUGINS
+// Same as linkLight of Widgets library; static build links that one only
 linkLight::linkLight(QWidget *parent): QWidget(parent)
 {
 	posX = 1;
@@ -70,6 +72,7 @@ void linkLight::paintEvent(QPaintEvent *event)
 	painter.setBrush(brush);
 	painter.drawEllipse(rectangle2);
 }
+#endif // KUMIR2_STATIC_PLUGINS
 
 
 GrasshopperPult::GrasshopperPult(

@@ -370,7 +370,7 @@ void VodoleyModule::updateLastFiles(QString newFile)
 	if (lastFiles.indexOf(newFile) < 0) {
 		lastFiles.prepend(newFile);
 	}
-	int max_fid = std::min(lastFiles.count(), 11);
+	int max_fid = std::min(int(lastFiles.count()), 11);
 	QString sett = "";
 	for (int i = 0; i < max_fid; i++) {
 		sett += lastFiles.at(i) + ";";

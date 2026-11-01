@@ -2,6 +2,7 @@
 #define EDITOR_FINDREPLACE_H
 
 #include <QWidget>
+#include <QRegExp>
 class QDir;
 
 namespace Editor

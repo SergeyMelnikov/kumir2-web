@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include <kumir2/qtcompat.h>
 #include "ui_mainwindow.h"
 #include "interface.h"
 #include "csInterface.h"
@@ -44,7 +45,9 @@ void MainWindowTask::setup()
 	ui->treeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	settings = new QSettings("NIISI RAS", "Kumir 1.9");
 	setWindowIcon(QIcon(":/taskEdit.ico"));
-	settings->setIniCodec("UTF-8");
+#if QT_VERSION < 0x060000
+	settings->setIniCodec("UTF-8"); // Qt6 always uses UTF-8 for INI files
+#endif
 	lastFiles = settings->value("RescentFiles").toStringList();
 	customMenu.hide();
 	connect(ui->loadCurs, SIGNAL(triggered()), this, SLOT(loadCourse()));
@@ -466,7 +469,11 @@ void MainWindowTask::refreshIspsNEnv()
 		task->fields.clear();
 		for (int j = 0; j < t_fields.count(); j++) {
 
+#if QT_VERSION >= 0x060000
+			task->fields.insert(task->isps[i], curDir + '/' + t_fields[j]);
+#else
 			task->fields.insertMulti(task->isps[i], curDir + '/' + t_fields[j]);
+#endif
 			qDebug() << curDir + '/' + t_fields[j];
 
 		};
@@ -529,7 +536,11 @@ void MainWindowTask::startTask()
 		task->fields.clear();
 		for (int j = 0; j < t_fields.count(); j++) {
 
+#if QT_VERSION >= 0x060000
+			task->fields.insert(task->isps[i], curDir + '/' + t_fields[j]);
+#else
 			task->fields.insertMulti(task->isps[i], curDir + '/' + t_fields[j]);
+#endif
 			qDebug() << curDir + '/' + t_fields[j];
 
 		};
@@ -746,7 +757,7 @@ QString MainWindowTask::loadTestAlg(QString file_name)
 		return "";
 	};
 	QTextStream ts(&file);
-	ts.setCodec("UTF-16LE");
+	Kumir2Qt::setStreamCodec(ts, "UTF-16LE");
 	QString testalg = ts.readAll();
 	file.close();
 

@@ -1,4 +1,5 @@
 #include "defaultstartpage.h"
+#include <kumir2/qtcompat_gui.h>
 #include "plugin.h"
 #include "mainwindow.h"
 #include "ui_defaultstartpage.h"
@@ -253,13 +254,13 @@ QString CoreGUI::DefaultStartPage::makeShortText(const QString &s, const int max
 	static const int Margins = 30;
 	const int availableWidth = maxWidth - Margins;
 	QString ss = s;
-	int w = fm.width(ss);
+	int w = Kumir2Qt::textWidth(fm, ss);
 	if (w <= availableWidth) {
 		return ss;
 	}
 	while (ss.length() > 0) {
 		ss.remove(ss.length() - 1, 1);
-		w = fm.width(ss + "...");
+		w = Kumir2Qt::textWidth(fm, ss + "...");
 		if (w <= availableWidth) {
 			break;
 		}

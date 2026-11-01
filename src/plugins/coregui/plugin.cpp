@@ -1,4 +1,5 @@
 #include "tabwidgetelement.h"
+#include <QActionGroup>
 #include "switchworkspacedialog.h"
 #include "plugin.h"
 #include "mainwindow.h"
@@ -24,7 +25,9 @@
 
 #include "defaultstartpage.h"
 
+#ifndef Q_OS_WASM
 #include <QProcess>
+#endif
 #include <QDebug>
 
 #ifdef Q_OS_MACX
@@ -128,9 +131,11 @@ QString Plugin::initialize(const QStringList &parameters, const ExtensionSystem:
 		}
 	}
 
+#ifndef Q_OS_WASM // QProcess is not available in WebAssembly
 	qRegisterMetaType<QProcess::ExitStatus>("QProcess::ExitStatus");
 
 	qRegisterMetaType<QProcess::ProcessError>("QProcess::ProcessError");
+#endif
 
 	qRegisterMetaType<Shared::Analizer::SourceFileInterface::Data>("KumirFile.Data");
 

@@ -17,6 +17,10 @@
 //begin 14-02-2008
 
 #include "kuznec.h"
+#include <kumir2/qtcompat.h>
+#if QT_VERSION >= 0x050000
+#include <QStandardPaths>
+#endif
 #include "dialog.h"
 #include "pult.h"
 #include "grasshoppermodule.h"
@@ -184,7 +188,11 @@ KumKuznec::KumKuznec(const QDir &mresd)
 	MV->setAttribute(Qt::WA_KeyboardFocusChange, false);
 	MV->setGeometry(10, 10, 500, 500);
 	QIcon icon(":/grasshopper.png");
+#if QT_VERSION < 0x060000
+	// ":/grasshopper.png" is not in any resource file: Qt5 QIcon still reports
+	// such icon as non-null, Qt6 reports it as null (the window has no icon in both)
 	Q_ASSERT(!icon.isNull());
+#endif
 	MV->setWindowIcon(icon);
 
 	MV->setWindowTitle(QString::fromUtf8("Кузнечик - нет файла"));
@@ -706,7 +714,7 @@ int KumKuznec::LoadFromFile(QString p_FileName)
 	qDebug() << ttt;
 	l_String = QString::fromUtf8(ttt);
 	l_String = l_String.simplified();
-	zadanie = l_String.split(" ", QString::SkipEmptyParts);
+	zadanie = l_String.split(" ", Kumir2Qt::SkipEmptyParts);
 	for (int i = 0; i < zadanie.count() - 1; i++) {
 		qDebug() << "flag:" << zadanie[i];
 		flags_pos.append(zadanie[i].toInt(&ok));
@@ -1452,11 +1460,11 @@ void KumKuznec::InfoOKClick(void)
 
 void KumKuznec::CreateXYLabel(void)
 {
-	lXCur = new QLabel(QString::fromUtf8("X= "), MV, 0);
+	lXCur = new QLabel(QString::fromUtf8("X= "), MV, Qt::WindowFlags());
 	lXCur->setGeometry(QRect(ButtonSdwig + 90, 0, 80, 20));
 	lXCur->hide();
 
-	lYCur = new QLabel(QString::fromUtf8("Y= "), MV, 0);
+	lYCur = new QLabel(QString::fromUtf8("Y= "), MV, Qt::WindowFlags());
 	lYCur->setGeometry(QRect(ButtonSdwig + 90, 12, 80, 20));
 	lYCur->hide();
 //qWarning("XYYYYYYYY");

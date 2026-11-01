@@ -1,4 +1,5 @@
 #include "analizer.h"
+#include <kumir2/qtcompat.h>
 #include "lexer.h"
 #include "pdautomata.h"
 #include "syntaxanalizer.h"
@@ -137,7 +138,7 @@ std::string Analizer::rawSourceData() const
 	QByteArray ba;
 	QTextStream ts(&ba);
 	ts.setGenerateByteOrderMark(true);
-	ts.setCodec("UTF-8");
+	Kumir2Qt::setStreamCodec(ts, "UTF-8");
 	ts << s;
 	return std::string(ba.constData());
 }
@@ -353,7 +354,7 @@ void Analizer::setSourceText(const QString &text)
 		}
 	}
 	_statements.clear();
-	_sourceText = text.split("\n", QString::KeepEmptyParts);
+	_sourceText = text.split("\n", Kumir2Qt::KeepEmptyParts);
 
 	QList<TextStatementPtr> preprocessorStatements;
 	_lexer->splitIntoStatements(_sourceText, 0, preprocessorStatements, QStringList());

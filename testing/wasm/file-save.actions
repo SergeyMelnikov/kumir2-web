@@ -1,0 +1,4 @@
+wait 7
+download saved.kum
+wait 2
+shot save

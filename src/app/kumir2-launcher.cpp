@@ -8,6 +8,46 @@
 #include <QSplashScreen>
 #include <QApplication>
 #include <QTextCodec>
+#ifdef Q_OS_WASM
+#include <emscripten.h>
+
+// Qt 6.10 installs clipboard handlers on its canvas in some browsers,
+// while a custom QWidget editor receives DOM focus in the sibling helper.
+// Forward only that helper's paste events to Qt's existing clipboard path.
+EM_JS(void, installWasmPasteBridge, (), {
+    document.addEventListener("paste", function(event) {
+        const target = event.composedPath()[0];
+        if (!target || !target.classList ||
+            !target.classList.contains("qt-window-focus-helper"))
+            return;
+        const windowElement = target.closest(".qt-window");
+        const canvas = windowElement && windowElement.querySelector("canvas.qt-window-canvas");
+        if (!canvas)
+            return;
+        // Native DataTransfer contents are only readable during the browser's
+        // paste dispatch. Asyncify can defer Qt's callback until afterward.
+        const contents = new DataTransfer();
+        if (!event.clipboardData)
+            return;
+        for (const format of event.clipboardData.types) {
+            if (format !== "Files")
+                contents.setData(format, event.clipboardData.getData(format));
+        }
+        for (const file of event.clipboardData.files)
+            contents.items.add(file);
+        const forwarded = new Event("paste", {
+            bubbles: true, composed: true, cancelable: true
+        });
+        // Firefox ignores ClipboardEventInit.clipboardData.
+        Object.defineProperty(forwarded, "clipboardData", { value: contents });
+        canvas.dispatchEvent(forwarded);
+        // Qt may consume the forwarded event asynchronously. Avoid delivering
+        // the original a second time or inserting into the hidden DOM helper.
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }, true);
+});
+#endif
 
 #include <kumir2-libs/extensionsystem/pluginmanager.h>
 #include <kumir2-libs/extensionsystem/logger.h>
@@ -435,6 +475,14 @@ setup_custom_vendor_information()
 
 int main(int argc, char **argv)
 {
+#ifdef Q_OS_WASM
+	// Emscripten defaults argv[0] to ./this.program. Kumir derives its
+	// settings scope and documentation index from the executable name.
+	static char launcherName[] = KUMIR2_WASM_LAUNCHER_NAME;
+	if (argc > 0) {
+		argv[0] = launcherName;
+	}
+#endif
 	guiMode = false;
 	pipeMode = false;
 	versionMode = false;
@@ -458,6 +506,9 @@ int main(int argc, char **argv)
 #endif
 
 	Application *app = new Application(argc, argv, guiMode);
+#ifdef Q_OS_WASM
+	installWasmPasteBridge();
+#endif
 
 #ifdef WINDOW_ICON
 	if (guiMode) {
@@ -477,7 +528,11 @@ int main(int argc, char **argv)
 	QString gitHash = QString::fromLatin1(GIT_HASH);
 	QString gitTag = QString::fromLatin1(GIT_TAG);
 	QString gitBranch = QString::fromLatin1(GIT_BRANCH);
+#if QT_VERSION >= 0x060000
+	QDateTime gitTimeStamp = QDateTime::fromSecsSinceEpoch(QString::fromLatin1(GIT_TIMESTAMP).toUInt());
+#else
 	QDateTime gitTimeStamp = QDateTime::fromTime_t(QString::fromLatin1(GIT_TIMESTAMP).toUInt());
+#endif
 
 	qApp->setApplicationVersion(gitTag.length() > 0 && gitTag != "unknown"
 		? gitTag : gitBranch + "/" + gitHash);
@@ -512,7 +567,11 @@ int main(int argc, char **argv)
 		if (customInfo) {
 			v += "]";
 		}
+#if QT_VERSION >= 0x060000
+		int tw = QFontMetrics(f).horizontalAdvance(v);
+#else
 		int tw = QFontMetrics(f).width(v);
+#endif
 		int th = QFontMetrics(f).height() * 5;
 		int x = img.width() - tw - 8;
 		int y = 8;

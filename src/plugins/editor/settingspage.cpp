@@ -1,4 +1,5 @@
 #include "settingspage.h"
+#include <QRegExp>
 #include "ui_settingspage.h"
 
 #include <kumir2-libs/extensionsystem/pluginmanager.h>

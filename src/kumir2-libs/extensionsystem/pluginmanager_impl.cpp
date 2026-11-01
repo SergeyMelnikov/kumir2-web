@@ -1,6 +1,7 @@
 #include "pluginmanager_impl.h"
 #include <QPluginLoader>
 #include <QDebug>
+#include <algorithm>
 
 #if defined(Q_OS_WIN32)
 #if defined(__MINGW32__)
@@ -19,6 +20,13 @@ static const char *LIB_SUFFIX = ".so";
 
 namespace ExtensionSystem
 {
+
+QMap<QByteArray, PluginManager::StaticPluginFactory> &staticPluginFactories()
+{
+	// Function-local static: safe to use from static initializers of other units
+	static QMap<QByteArray, PluginManager::StaticPluginFactory> factories;
+	return factories;
+}
 
 
 bool PluginManagerImpl::extractRuntimeParametersForPlugin(const KPlugin *plugin, CommandLine &parameters)
@@ -148,6 +156,19 @@ QString PluginManagerImpl::loadPlugin(PluginSpec spec, const QList<PluginSpec> &
 		loadPlugin(specToLoad, allSpecs);
 	}
 
+#ifdef KUMIR2_STATIC_PLUGINS
+	// Plugins are linked into the executable: create by registered factory
+	const QString nonStandardPathToUse;
+	PluginManager::StaticPluginFactory factory = staticPluginFactories().value(spec.name, 0);
+	if (!factory) {
+		return QString("Can't load module %1: not linked into this executable")
+			.arg(QString::fromLatin1(spec.name));
+	}
+	KPlugin *plugin = factory();
+	if (!plugin) {
+		return QString("Plugin %1 is not valid (does not implement interface KPlugin)");
+	}
+#else
 	QStringList librarySearchPaths = QStringList() << path;
 #ifdef Q_OS_UNIX
 	const char *extraPluginSearchPath = ::getenv("KUMIR2_PLUGIN_PATH");
@@ -194,6 +215,7 @@ QString PluginManagerImpl::loadPlugin(PluginSpec spec, const QList<PluginSpec> &
 		return QString("Plugin %1 is not valid (does not implement interface KPlugin)");
 		loader.unload();
 	}
+#endif
 	plugin->createPluginSpec();
 	plugin->_pluginSpec.arguments = spec.arguments;
 	plugin->_pluginSpec.main = spec.main;
@@ -297,7 +319,11 @@ QString PluginManagerImpl::parsePluginsRequest(const QByteArray &templ, QList<Pl
 	plugins << cur;
 	int starts = 0;
 	// Qt bug !!! Use STL instead and then convert back to QList
+#if QT_VERSION >= 0x060000
+	std::list<PluginSpec> stdPlugins(plugins.begin(), plugins.end());
+#else
 	std::list<PluginSpec> stdPlugins = plugins.toStdList();
+#endif
 	std::list<PluginSpec>::iterator it = stdPlugins.begin();
 	while (it != stdPlugins.end()) {
 		PluginSpec p = (*it);
@@ -305,10 +331,26 @@ QString PluginManagerImpl::parsePluginsRequest(const QByteArray &templ, QList<Pl
 			if (p.main) {
 				return "Entry point defined for masked by * name in plugins template";
 			}
+#ifdef KUMIR2_STATIC_PLUGINS
+			// Same matching and order as QDir::entryList below gives for plugin
+			// libraries: case insensitive wildcard, sorted by lower-cased file name
+			QStringList entries;
+			const QString nameFilter = LIB_PREFIX + p.name + LIB_SUFFIX;
+			Q_FOREACH (const QByteArray &staticName, staticPluginFactories().keys()) {
+				const QString fileName = LIB_PREFIX + QString::fromLatin1(staticName) + LIB_SUFFIX;
+				if (QDir::match(nameFilter, fileName)) {
+					entries.append(fileName);
+				}
+			}
+			std::sort(entries.begin(), entries.end(), [](const QString &a, const QString &b) {
+				return a.toLower() < b.toLower();
+			});
+#else
 			QDir dir(path);
 			QStringList entries = dir.entryList(QStringList() <<
 					LIB_PREFIX + p.name + LIB_SUFFIX,
 					QDir::Files);
+#endif
 			it = stdPlugins.erase(it);
 			foreach (const QString &e, entries) {
 				PluginSpec pp;
@@ -325,7 +367,11 @@ QString PluginManagerImpl::parsePluginsRequest(const QByteArray &templ, QList<Pl
 			++it;
 		}
 	}
+#if QT_VERSION >= 0x060000
+	plugins = QList<PluginSpec>(stdPlugins.begin(), stdPlugins.end());
+#else
 	plugins = QList<PluginSpec>::fromStdList(stdPlugins);
+#endif
 	for (int i = 0; i < plugins.size(); i++) {
 		if (plugins[i].main) {
 			starts ++;

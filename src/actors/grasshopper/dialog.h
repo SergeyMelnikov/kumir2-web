@@ -22,7 +22,7 @@ class Dialog : public QDialog, Ui::Dialog
 	Q_OBJECT
 
 public:
-	Dialog(QWidget *parent = 0, Qt::WindowFlags fl = 0);
+	Dialog(QWidget *parent = 0, Qt::WindowFlags fl = Qt::WindowFlags());
 	~Dialog();
 
 	int ASize() const;

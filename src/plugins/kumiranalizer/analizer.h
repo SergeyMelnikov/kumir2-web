@@ -9,6 +9,7 @@
 #include <kumir2-libs/dataformats/ast.h>
 
 #include <QVector>
+#include <QRegExp>
 class QDir;
 
 namespace KumirAnalizer

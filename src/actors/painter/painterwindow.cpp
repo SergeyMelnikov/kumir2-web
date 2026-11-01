@@ -5,7 +5,11 @@
 #include "paintermodule.h"
 
 #include <QtCore/qmath.h>
+#if QT_VERSION >= 0x060000
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
 #include <QAction>
 #include <QScrollBar>
 #include <QFileDialog>
@@ -47,7 +51,11 @@ PainterWindow::PainterWindow(PainterModule *module, QWidget *parent) :
 	ExtensionSystem::SettingsPtr s = m_module->mySettings();
 	restoreGeometry(s->value("WindowGeometry").toByteArray());
 	qreal initialZoom = 1.0;
+#if QT_VERSION >= 0x060000
+	QRect screenRect = QGuiApplication::primaryScreen()->availableGeometry();
+#else
 	QRect screenRect = qApp->desktop()->availableGeometry();
+#endif
 	if (screenRect.height() < 700) {
 		initialZoom = 0.5;
 	}
@@ -86,7 +94,9 @@ PainterWindow::PainterWindow(PainterModule *module, QWidget *parent) :
 	ui->zoomLabel->setText(QString::number(int(ui->view->zoom() * 100)) + "%");
 	static const QString resourcesRoot = m_module->myResourcesDir().absolutePath();
 	QSettings templates(QDir(resourcesRoot).absoluteFilePath("templates.ini"), QSettings::IniFormat);
-	templates.setIniCodec("UTF-8");
+#if QT_VERSION < 0x060000
+	templates.setIniCodec("UTF-8"); // Qt6 always uses UTF-8 for INI files
+#endif
 	const QString defName = templates.value("Names/default.png", "new page").toString();
 	updateWindowTitle("", defName);
 }

@@ -1,4 +1,5 @@
 #include "generator.h"
+#include <kumir2/qtcompat.h>
 #include "preambule.tex.h"
 
 #include <kumir2-libs/docbookviewer/docbookmodel.h>
@@ -482,7 +483,7 @@ QString generator::renderKeySym(ModelPtr data)
     foreach (ModelPtr  child, data->children()) {
         keysym += child->text();
     }
-    const QStringList keys = keysym.split("+", QString::SkipEmptyParts);
+    const QStringList keys = keysym.split("+", Kumir2Qt::SkipEmptyParts);
     QStringList parts;
     foreach (const QString & key, keys) {
         QString part = "\\textsc{";

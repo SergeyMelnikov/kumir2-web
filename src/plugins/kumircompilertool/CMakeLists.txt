@@ -15,6 +15,8 @@ kumir2_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
 
 kumir2_add_plugin(
 	NAME        KumirCompilerTool
+	CLASS       KumirCompilerTool::KumirCompilerToolPlugin
+	HEADER      kumircompilertoolplugin.h
 	SOURCES     ${MOC_SOURCES} ${SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} ExtensionSystem DataFormats
 )

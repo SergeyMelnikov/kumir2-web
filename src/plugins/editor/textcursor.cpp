@@ -1,4 +1,5 @@
 #include "editor.h"
+#include <kumir2/qtcompat.h>
 #include "textcursor.h"
 #include "textdocument.h"
 #include "clipboard.h"
@@ -236,7 +237,7 @@ void TextCursor::normalizePlainText(QString &s)
 	}
 
 	// 2. Replace leading indents
-	QStringList lines = s.split('\n', QString::KeepEmptyParts);
+	QStringList lines = s.split('\n', Kumir2Qt::KeepEmptyParts);
 	const int textLength = s.length();
 	s.clear();
 	s.reserve(textLength);
@@ -437,7 +438,7 @@ void TextCursor::evaluateCommand(const KeyCommand &command)
 					QRegExp rxLineComment = editor_->analizer()->helper()
 						? editor_->analizer()->helper()->lineCommentStartLexemPattern()
 						: QRegExp();
-					QStringList lines = textToInsert.split("\n", QString::KeepEmptyParts);
+					QStringList lines = textToInsert.split("\n", Kumir2Qt::KeepEmptyParts);
 					for (int i = 0; i < lines.size(); i++) {
 						QString &line = lines[i];
 						if (0 == rxLeadingSpaces.indexIn(line)) {
@@ -489,7 +490,7 @@ void TextCursor::evaluateCommand(const KeyCommand &command)
 			// Ask for a compiler
 			if (append.first.length() > 0) {
 				// If found suggesstion
-				const QStringList extraLines = append.first.split('\n', QString::KeepEmptyParts);
+				const QStringList extraLines = append.first.split('\n', Kumir2Qt::KeepEmptyParts);
 				for (int i = 0; i < extraLines.size(); i++) {
 					// insert closing bracket text lines
 					QString line = extraLines[i];

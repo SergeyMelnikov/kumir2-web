@@ -1,4 +1,6 @@
 #include "course_model.h"
+#include <QRegExp>
+#include <kumir2/qtcompat.h>
 #include <kumir2/coursesinterface.h>
 
 #include <QSize>
@@ -97,7 +99,7 @@ int courseModel::loadCourse(QString file, bool cmode)
 	int eline, ecol;
 	QString taskData;
 	QTextStream ts(&f);
-	ts.setCodec("UTF-8");
+	Kumir2Qt::setStreamCodec(ts, "UTF-8");
 	taskData.append(ts.readAll());
 	qDebug() << "Cource len in symbols:", taskData.length();
 	if (!courceXml.setContent(taskData, true, &error, &eline, &ecol)) {
@@ -325,7 +327,7 @@ QDomNode courseModel::nodeById(int id, const QDomNode &parent) const
 Qt::ItemFlags courseModel::flags(const QModelIndex &index) const
 {
 	if (!index.isValid()) {
-		return 0;
+		return Qt::ItemFlags();
 	}
 	// qDebug()<<"IS teacher:"<<isTeacher;
 	if (isTeacher) {

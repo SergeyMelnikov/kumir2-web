@@ -1,0 +1,27 @@
+wait 8
+click 180 110
+key Control+Home
+key Control+a
+type использовать Робот
+key Enter
+type алг
+key Enter
+type нач
+key Enter
+type вправо
+key Enter
+type вывод "готово 6", нс
+key Enter
+type кон
+key Enter
+wait 3
+shot program
+key F9
+wait 5
+shot run
+key F8
+wait 2
+shot step
+key Escape
+wait 2
+shot stopped

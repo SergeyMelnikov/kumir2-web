@@ -1,4 +1,5 @@
 #include "editor.h"
+#include <kumir2/qtcompat.h>
 #include "textdocument.h"
 #include "textcursor.h"
 #include "settingspage.h"
@@ -54,7 +55,7 @@ void TextDocument::insertText(const QString &text, const Shared::Analizer::Insta
 	tl.changed = true;
 	data_[line] = tl;
 
-	const QStringList lines = text.split("\n", QString::KeepEmptyParts);
+	const QStringList lines = text.split("\n", Kumir2Qt::KeepEmptyParts);
 	if (lines.size() == 1) {
 		// Insert text fragment into line
 		data_[line].text.insert(pos, lines[0]);
@@ -842,11 +843,20 @@ QByteArray TextDocument::toRtf(uint fromLine, uint toLine) const
 	const int fontSize = usedFont.pointSize();
 
 	// Font table
+#if QT_VERSION >= 0x060000
+	// Qt5 QByteArray::append(QString) converted the string with toUtf8()
+	result.append(QString(
+			"{\\fonttbl{\\f0\\fmodern\\fcharset204 %1;}}\r\n"
+		)
+		.arg(fontName).toUtf8()
+	);
+#else
 	result.append(QString(
 			"{\\fonttbl{\\f0\\fmodern\\fcharset204 %1;}}\r\n"
 		)
 		.arg(fontName)
 	);
+#endif
 
 	// Begin color table
 	result.append("{\\colortbl;");
@@ -865,7 +875,11 @@ QByteArray TextDocument::toRtf(uint fromLine, uint toLine) const
 	result.append("}\r\n");
 
 	// Begin code style
+#if QT_VERSION >= 0x060000
+	result.append(QString("{\\f0\\fs%1\\lang1024\r\n").arg(fontSize * 2).toUtf8());
+#else
 	result.append(QString("{\\f0\\fs%1\\lang1024\r\n").arg(fontSize * 2));
+#endif
 
 	// Begin table row
 
@@ -933,7 +947,11 @@ QByteArray TextDocument::toRtf(uint fromLine, uint toLine) const
 			static QTextCodec *codec = QTextCodec::codecForName("CP1251");
 			result.append("\\intbl");
 			if (text.length() > 0) {
+#if QT_VERSION >= 0x060000
+				result.append(QString("{\\fs%1 ").arg(fontSize * 2).toUtf8());
+#else
 				result.append(QString("{\\fs%1 ").arg(fontSize * 2));
+#endif
 				if (red) {
 					result.append("\\cf9 ");
 				}

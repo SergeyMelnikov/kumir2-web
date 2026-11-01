@@ -64,7 +64,7 @@ private:
 			: item(data), textPosition(0) {}
 		operator bool() const
 		{
-			return item;
+			return !item.isNull();
 		}
 	};
 

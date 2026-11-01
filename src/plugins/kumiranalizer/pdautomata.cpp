@@ -1,4 +1,6 @@
 #include "pdautomata.h"
+#include <QRegExp>
+#include <kumir2/qtcompat.h>
 
 #include <kumir2-libs/errormessages/errormessages.h>
 
@@ -18,6 +20,9 @@
 static const int MAXIMUM_ERRORS_EDGES = 10000;
 
 using namespace Shared;
+#if QT_VERSION >= 0x060000
+using Qt::endl; // QTextStream/QDebug manipulator moved to Qt namespace
+#endif
 using AST::Lexem;
 using AST::LexemPtr;
 
@@ -446,7 +451,7 @@ void PDAutomata::loadRules(const QString &rulesRoot)
 //    qDebug() << "fff";
 	foreach (QString key, matrix_.keys()) {
 		Rules rulesList = matrix_[key];
-		qSort(rulesList);
+		Kumir2Qt::qtSort(rulesList);
 		matrix_[key] = rulesList;
 	}
 //    qDebug() << "End load rules";
@@ -681,8 +686,8 @@ static std::list<QString> readRulesFile(const QString &fileName)
 		return result;
 	}
 	QTextStream ts(&f);
-	ts.setCodec("UTF-8");
-	result = ts.readAll().split("\n").toStdList();
+	Kumir2Qt::setStreamCodec(ts, "UTF-8");
+	result = Kumir2Qt::toStdList(ts.readAll().split("\n"));
 	f.close();
 	result.remove_if(isEmptyRulesLine);
 	mergeRuleLines(result);
@@ -833,7 +838,11 @@ void prepareRules(const QStringList &files, QString &out)
 
 	QList<QStringList> pravila;
 	foreach (QString s, pravila1) {
+#if QT_VERSION >= 0x060000
+		pravila << QRegExp("\\s+").splitString(s, Qt::SkipEmptyParts);
+#else
 		pravila << s.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+#endif
 		if (!isNeterminal(pravila.last()[0]) || pravila.last()[1] != "->" || pravila.last().count() < 3) {
 			qDebug() << QString::fromUtf8("Ошибка в левой части: ") << pravila.last().join(" ") << endl;
 			return;
@@ -1071,7 +1080,7 @@ void prepareRules_By_N_M_Suboch(const QStringList &files, QString &out, const QL
 	filIn1.open(QIODevice::WriteOnly);
 
 	QTextStream sIn1(&filIn1);
-	sIn1.setCodec("UTF-8");
+	Kumir2Qt::setStreamCodec(sIn1, "UTF-8");
 
 
 	int fileNum = -1;
@@ -1083,7 +1092,7 @@ void prepareRules_By_N_M_Suboch(const QStringList &files, QString &out, const QL
 		filIn.open(QIODevice::ReadOnly);
 
 		QTextStream sIn(&filIn);
-		sIn.setCodec("UTF-8");
+		Kumir2Qt::setStreamCodec(sIn, "UTF-8");
 
 
 		for (; !sIn.atEnd() ;) {
@@ -1124,7 +1133,7 @@ void prepareRules_By_N_M_Suboch(const QStringList &files, QString &out, const QL
 	filIn.setData(filIn1.data());
 	filIn.open(QIODevice::ReadOnly);
 	QTextStream sIn(&filIn);
-	sIn.setCodec("UTF-8");
+	Kumir2Qt::setStreamCodec(sIn, "UTF-8");
 
 
 	QStringList pravila1;
@@ -1175,7 +1184,11 @@ void prepareRules_By_N_M_Suboch(const QStringList &files, QString &out, const QL
 
 	QList<QStringList> pravila;
 	foreach (QString s, pravila1) {
+#if QT_VERSION >= 0x060000
+		pravila << QRegExp("\\s+").splitString(s, Qt::SkipEmptyParts);
+#else
 		pravila << s.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+#endif
 		if (!isNeterminal(pravila.last()[0]) || pravila.last()[1] != "->" || pravila.last().count() < 3) {
 			qDebug() << QString::fromUtf8("Ошибка в левой части: ") << pravila.last().join(" ") << endl;
 			return;

@@ -29,6 +29,8 @@ kumir2_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
 
 kumir2_add_plugin(
 	NAME        KumirCodeRun
+	CLASS       KumirCodeRun::KumirRunPlugin
+	HEADER      runplugin.h
 	SOURCES     ${MOC_SOURCES} ${SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} VM ExtensionSystem
 )

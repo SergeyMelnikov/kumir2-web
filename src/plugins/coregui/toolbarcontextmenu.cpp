@@ -8,7 +8,11 @@
 #include <QPainter>
 #include <QStyleOptionMenuItem>
 #include <QApplication>
+#if QT_VERSION >= 0x060000
+#include <QScreen>
+#else
 #include <QDesktopWidget>
+#endif
 #include <QMenuBar>
 #include <QToolBar>
 #include <QGridLayout>
@@ -281,7 +285,11 @@ void ToolbarContextMenu::paintEvent(QPaintEvent *event)
 	menuOpt.state = QStyle::State_None;
 	menuOpt.checkType = QStyleOptionMenuItem::NotCheckable;
 	menuOpt.maxIconWidth = 0;
+#if QT_VERSION >= 0x060000
+	menuOpt.reservedShortcutWidth = 0; // renamed from tabWidth in Qt6
+#else
 	menuOpt.tabWidth = 0;
+#endif
 	style()->drawPrimitive(QStyle::PE_PanelMenu, &menuOpt, &p, this);
 	QWidget::paintEvent(event);
 	const int fw = style()->pixelMetric(QStyle::PM_MenuPanelWidth, 0, this);
@@ -340,8 +348,14 @@ void ToolbarContextMenu::showMe()
 	}
 
 	QRect contextRect(position, size());
+#if QT_VERSION >= 0x060000
+	// QDesktopWidget::availableGeometry(widget): screen of the widget
+	QScreen *screen = this->screen();
+	QRect screenRect = screen ? screen->availableGeometry() : QRect();
+#else
 	QDesktopWidget *screen = qApp->desktop();
 	QRect screenRect = screen->availableGeometry(this);
+#endif
 	if (contextRect.right() > screenRect.right()) {
 		contextRect.moveRight(screenRect.right());
 	}

@@ -1,4 +1,5 @@
 #include "systemopenfilesettings.h"
+#include <kumir2/qtcompat.h>
 #include "ui_systemopenfilesettings.h"
 
 #include <QDir>
@@ -34,7 +35,9 @@ SystemOpenFileSettings::SystemOpenFileSettings(QWidget *parent) :
     ui->groupBox->layout()->addItem(new QSpacerItem(10, 50, QSizePolicy::Fixed, QSizePolicy::MinimumExpanding));
 
     sett_ = new QSettings("kumir2", "kumir2-open");
-    sett_->setIniCodec("UTF-8");
+#if QT_VERSION < 0x060000
+    sett_->setIniCodec("UTF-8"); // Qt6 always uses UTF-8 for INI files
+#endif
 }
 
 void SystemOpenFileSettings::init()
@@ -79,7 +82,7 @@ void SystemOpenFileSettings::scanForApplications(const QString &appsDirPath,
         QFile f(appsDir.absoluteFilePath(fileName));
         if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QTextStream ts(&f);
-            ts.setCodec("UTF-8");
+            Kumir2Qt::setStreamCodec(ts, "UTF-8");
             QStringList lines = ts.readAll().split("\n");
             f.close();
             Application app;

@@ -40,7 +40,7 @@
 Vodoley::Vodoley()
 {
 	autoClose = false;
-	pult = new VodoleyPult(0, 0, this);
+	pult = new VodoleyPult(0, Qt::WindowFlags(), this);
 
 	scene = new QGraphicsScene(this);
 	view = new QGraphicsView(this);

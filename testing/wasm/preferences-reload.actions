@@ -1,0 +1,17 @@
+wait 7
+click 45 10
+click 100 206
+wait 1
+click 866 285
+key Control+a
+type 16
+click 866 569
+wait 1
+shot changed-font
+reload
+wait 7
+click 45 10
+click 100 206
+wait 1
+shot preferences-after-reload
+key Escape

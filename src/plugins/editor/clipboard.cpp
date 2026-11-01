@@ -27,7 +27,8 @@ int Clipboard::entriesCount() const
 	int result = data_.size();
 	QClipboard *cl = QApplication::clipboard();
 	bool duplicate = false;
-	if (cl->mimeData()->hasText()) {
+	const QMimeData *mimeData = cl->mimeData();
+	if (mimeData && mimeData->hasText()) {
 		foreach (const ClipboardData &entry, data_) {
 			if (entry.text == cl->text()) {
 				duplicate = true;
@@ -74,6 +75,9 @@ bool Clipboard::hasContent() const
 	if (selection_ == -1) {
 		QClipboard *cl = QApplication::clipboard();
 		const QMimeData *data = cl->mimeData();
+		if (!data) {
+			return false;
+		}
 		bool text = data->hasText();
 		bool block = data->hasFormat(BlockMimeType);
 		if (text) {
@@ -92,16 +96,20 @@ ClipboardData Clipboard::content() const
 		QClipboard *cl = QApplication::clipboard();
 		ClipboardData result;
 		result.type = ClipboardData::Invalid;
-		if (cl->mimeData()->hasText()) {
+		const QMimeData *mimeData = cl->mimeData();
+		if (!mimeData) {
+			return result;
+		}
+		if (mimeData->hasText()) {
 			result.type = ClipboardData::Text;
-			result.text = cl->mimeData()->text();
+			result.text = mimeData->text();
 			// Microsoft PowerPoint compatibility hack:
 			// it uses character with code 11 as new line
 			result.text.replace(QChar(11), "\n");
 		}
-		if (cl->mimeData()->hasFormat(BlockMimeType)) {
+		if (mimeData->hasFormat(BlockMimeType)) {
 			result.type = ClipboardData::Block;
-			const QByteArray &raw = cl->mimeData()->data(BlockMimeType);
+			const QByteArray &raw = mimeData->data(BlockMimeType);
 			result.block = QString::fromUtf8(raw).split("\n");
 		}
 		return result;

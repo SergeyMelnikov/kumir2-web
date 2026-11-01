@@ -39,6 +39,8 @@ kumir2_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
 
 kumir2_add_plugin(
 	NAME        KumirAnalizer
+	CLASS       KumirAnalizer::KumirAnalizerPlugin
+	HEADER      kumiranalizerplugin.h
 	SOURCES     ${UI_SOURCES} ${MOC_SOURCES} ${SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} VM ExtensionSystem ErrorMessages DataFormats Widgets
 )

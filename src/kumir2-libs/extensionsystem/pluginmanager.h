@@ -44,6 +44,15 @@ public:
 	  * @return error message or empty string on success */
 	QString loadPluginsByTemplate(const QByteArray &templ);
 
+	/** Factory of a plugin linked into the executable (KUMIR2_STATIC_PLUGINS build). */
+	typedef KPlugin *(*StaticPluginFactory)();
+
+	/** Registers a statically linked plugin @param name (same as its shared
+	 *  library name without prefix and suffix) created by @param factory.
+	 *  Must be called before loadPluginsByTemplate. Used only by
+	 *  KUMIR2_STATIC_PLUGINS builds (generated code of launchers). */
+	static void registerStaticPlugin(const QByteArray &name, StaticPluginFactory factory);
+
 	/** Loads extra module (example: actor file on demand) by given canonical
 	 *  file name @param canonicalFileName.
 	 *

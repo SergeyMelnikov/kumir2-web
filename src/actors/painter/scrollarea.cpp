@@ -1,4 +1,5 @@
 #include "scrollarea.h"
+#include <kumir2/qtcompat_gui.h>
 
 #include <QWheelEvent>
 #include <QScrollBar>
@@ -12,15 +13,15 @@ ScrollArea::ScrollArea(QWidget *parent) :
 
 void ScrollArea::wheelEvent(QWheelEvent *evt)
 {
-    const int delta = evt->delta();
+    const int delta = Kumir2Qt::wheelDelta(evt);
     const int degrees = delta / 8;
     const int steps = -1 * degrees / 15;
     if (! (evt->modifiers() & Qt::ControlModifier) ) {
         // Scroll contents
-        QAbstractSlider* slider = evt->orientation() == Qt::Vertical
+        QAbstractSlider* slider = Kumir2Qt::wheelOrientation(evt) == Qt::Vertical
                 ? verticalScrollBar()
                 : horizontalScrollBar();
-        if (evt->orientation() == Qt::Vertical && evt->modifiers() & Qt::ShiftModifier) {
+        if (Kumir2Qt::wheelOrientation(evt) == Qt::Vertical && evt->modifiers() & Qt::ShiftModifier) {
             slider = horizontalScrollBar();
         }
         if (slider->isVisible()) {

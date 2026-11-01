@@ -105,7 +105,11 @@ QLayoutItem *FlowLayout::takeAt(int index)
 
 Qt::Orientations FlowLayout::expandingDirections() const
 {
+#if QT_VERSION >= 0x060000
+	return Qt::Orientations();
+#else
 	return 0;
+#endif
 }
 
 bool FlowLayout::hasHeightForWidth() const
@@ -138,7 +142,15 @@ QSize FlowLayout::minimumSize() const
 		size = size.expandedTo(item->minimumSize());
 	}
 
+#if QT_VERSION >= 0x060000
+	// Same as Qt5 QLayout::margin(): common margin or -1 if margins differ
+	const QMargins cm = contentsMargins();
+	const int margin = (cm.left() == cm.top() && cm.top() == cm.right() && cm.right() == cm.bottom())
+		? cm.left() : -1;
+	size += QSize(2 * margin, 2 * margin);
+#else
 	size += QSize(2 * margin(), 2 * margin());
+#endif
 	return size;
 }
 //! [8]

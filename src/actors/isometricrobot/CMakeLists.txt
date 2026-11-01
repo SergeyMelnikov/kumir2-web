@@ -1,6 +1,11 @@
 project(ActorIsometricRobot)
 #cmake_minimum_required(VERSION 3.0)
 #find_package(Kumir2 REQUIRED)
+if(${USE_QT} GREATER 5)
+    # QtScript does not exist in Qt6
+    message(STATUS "ActorIsometricRobot requires QtScript, skipped for Qt${USE_QT}")
+    return()
+endif()
 kumir2_use_qt(Core Gui Svg Script Xml)
 
 set(SOURCES

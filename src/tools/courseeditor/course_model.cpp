@@ -221,7 +221,7 @@ QDomNode courseModel::nodeById(int id, QDomNode parent) const
 Qt::ItemFlags courseModel::flags(const QModelIndex &index) const
 {
 	if (!index.isValid()) {
-		return 0;
+		return Qt::ItemFlags();
 	}
 	// qDebug()<<"IS teacher:"<<isTeacher;
 	if (isTeacher) {

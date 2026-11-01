@@ -18,6 +18,8 @@ kumir2_wrap_cpp(MOC_SOURCES ${MOC_HEADERS})
 
 kumir2_add_plugin(
 	NAME        KumirCodeGenerator
+	CLASS       KumirCodeGenerator::KumirCodeGeneratorPlugin
+	HEADER      kumircodegeneratorplugin.h
 	SOURCES     ${MOC_SOURCES} ${SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} VM ExtensionSystem DataFormats ErrorMessages
 )
