@@ -1,4 +1,5 @@
-# Builds kumir2-classic for WebAssembly and publishes it to GitHub Pages.
+# Builds kumir2-classic for WebAssembly, runs browser smoke tests and the
+# Qt5/Qt6 compatibility test, and publishes the build to GitHub Pages.
 # Repository settings: Pages -> Source: GitHub Actions.
 name: Deploy to GitHub Pages
 
@@ -12,9 +13,10 @@ permissions:
   pages: write
   id-token: write
 
+# A newer run waits instead of cancelling a deployment in progress
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -34,11 +36,52 @@ jobs:
           file: scripts/docker/qt6-wasm.Dockerfile
           tags: kumir2-qt6-wasm
           load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=qt6-wasm
+          cache-to: type=gha,mode=max,scope=qt6-wasm
 
       - name: Build kumir2-classic
         run: scripts/docker/build-wasm.sh
+
+      - name: Build browser test image (Playwright)
+        uses: docker/build-push-action@v7
+        with:
+          context: scripts/docker
+          file: scripts/docker/browser-test.Dockerfile
+          tags: kumir2-browser-test
+          load: true
+          cache-from: type=gha,scope=browser-test
+          cache-to: type=gha,mode=max,scope=browser-test
+
+      # Fails on JavaScript page errors and on unexpected saved file counts
+      # (see testing/wasm/README.md); screenshots are kept as an artifact
+      - name: Browser smoke tests
+        run: |
+          python3 scripts/wasm-serve.py build-wasm/bin 8090 > wasm-serve.log 2>&1 &
+          sleep 2
+          run() {
+            out="browser-test/$1-$2"
+            mkdir -p "$out"
+            echo "::group::$1 ($2)"
+            KUMIR2_TEST_FILE_PICKER="$2" testing/wasm/run.sh "$out" "testing/wasm/$1.actions" || status=1
+            echo "::endgroup::"
+          }
+          status=0
+          run robot-execution native
+          run file-roundtrip html
+          run save-cancel mock
+          run save-failure mock
+          run upload-cancel mock
+          run menu-file-pickers mock
+          run course-workbook mock
+          exit $status
+
+      - name: Upload browser test output
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: browser-test
+          path: browser-test
+          if-no-files-found: ignore
 
       - name: Assemble site
         run: scripts/pages/prepare-site.sh build-wasm/bin _site
@@ -47,8 +90,40 @@ jobs:
         with:
           path: _site
 
+  # Qt5 and Qt6 builds of the compatibility helpers must behave the same
+  qtcompat:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build Qt5 image
+        uses: docker/build-push-action@v7
+        with:
+          context: scripts/docker
+          file: scripts/docker/qt5-native.Dockerfile
+          tags: kumir2-qt5-native
+          load: true
+          cache-from: type=gha,scope=qt5-native
+          cache-to: type=gha,mode=max,scope=qt5-native
+
+      - name: Build Qt6 image
+        uses: docker/build-push-action@v7
+        with:
+          context: scripts/docker
+          file: scripts/docker/qt6-native.Dockerfile
+          tags: kumir2-qt6-native
+          load: true
+          cache-from: type=gha,scope=qt6-native
+          cache-to: type=gha,mode=max,scope=qt6-native
+
+      - name: Qt5/Qt6 compatibility test
+        run: testing/qtcompat/run.sh
+
   deploy:
-    needs: build
+    needs: [build, qtcompat]
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
