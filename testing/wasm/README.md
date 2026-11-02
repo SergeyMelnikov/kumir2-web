@@ -41,6 +41,12 @@ also supports `save-cancel.actions`, `save-failure.actions`, and
 `upload-cancel.actions`. Native OS picker UI is not automated by Playwright's
 `filechooser` event. Firefox uses the HTML fallback by default.
 
+`menu-file-pickers.actions` and `course-workbook.actions` (mock mode) open
+pickers from menus with `picker-delay`, so the pickers answer after a second
+as with a real user: Program > Save, Robot > Load/Save environment, and
+Practicum > Load course with a workbook saved by the save picker. They check
+the number of saved files with `check-saves`.
+
 For a Chromium clipboard test with explicit browser permissions:
 
 ```sh

@@ -18,6 +18,37 @@
     </message>
 </context>
 <context>
+    <name>Widgets::FileDialog</name>
+    <message>
+        <source>Can&apos;t open file</source>
+        <translation>Невозможно открыть файл</translation>
+    </message>
+    <message>
+        <source>The browser could not open the file.</source>
+        <translation>Браузер не смог открыть файл.</translation>
+    </message>
+    <message>
+        <source>Can&apos;t create temporary directory</source>
+        <translation>Невозможно создать временный каталог</translation>
+    </message>
+    <message>
+        <source>Can&apos;t save file</source>
+        <translation>Невозможно сохранить файл</translation>
+    </message>
+    <message>
+        <source>The browser could not save the file.</source>
+        <translation>Браузер не смог сохранить файл.</translation>
+    </message>
+    <message>
+        <source>Save file</source>
+        <translation>Сохранить файл</translation>
+    </message>
+    <message>
+        <source>File name:</source>
+        <translation>Имя файла:</translation>
+    </message>
+</context>
+<context>
     <name>Widgets::MultiPageDialogImpl</name>
     <message>
         <location filename="../../../src/shared/widgets/multipagedialog_impl.cpp" line="34"/>

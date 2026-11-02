@@ -17,6 +17,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QFileDialog>
+#include <kumir2-libs/widgets/filedialog.h>
 #include <QTextStream>
 #include <QMessageBox>
 
@@ -456,7 +457,7 @@ void Term::copyLast()
 
 void Term::saveText(const QString &suggestedFileName, const QString &text)
 {
-	QString fileName = QFileDialog::getSaveFileName(
+	QString fileName = Widgets::FileDialog::getSaveFileName(
 			this,
 			tr("Save output..."),
 			suggestedFileName,
@@ -468,7 +469,9 @@ void Term::saveText(const QString &suggestedFileName, const QString &text)
 			Kumir2Qt::setStreamCodec(ts, "UTF-8");
 			ts.setGenerateByteOrderMark(true);
 			ts << text;
+			ts.flush();
 			f.close();
+			Widgets::FileDialog::finishSave(this, fileName);
 		} else {
 			QMessageBox::critical(this,
 				tr("Can't save output"),

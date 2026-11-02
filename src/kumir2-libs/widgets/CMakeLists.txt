@@ -21,6 +21,7 @@ set(SOURCES
 	utf8textbrowser.cpp
 	iconprovider.cpp
 	flowlayout.cpp
+	filedialog.cpp
 )
 
 set(MOC_HEADERS
@@ -47,3 +48,8 @@ kumir2_add_library(
 	SOURCES     ${SOURCES} ${MOC_SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} ExtensionSystem
 )
+
+if(EMSCRIPTEN AND KUMIR2_WASM_ASYNCIFY)
+    # Browser file pickers suspend the caller (see filedialog.cpp)
+    set_property(SOURCE filedialog.cpp APPEND PROPERTY COMPILE_DEFINITIONS KUMIR2_WASM_ASYNCIFY)
+endif()

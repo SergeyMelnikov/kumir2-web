@@ -30,6 +30,7 @@
 #include <QMessageBox>
 #include <QFileInfo>
 #include <QFileDialog>
+#include <kumir2-libs/widgets/filedialog.h>
 #include <QAction>
 #include <QDebug>
 
@@ -492,7 +493,7 @@ bool Vodoley::loadFile(QString fileName)
 
 void Vodoley::loadZ()
 {
-	QString VodFileN = QFileDialog::getOpenFileName(this, QString::fromUtf8("Открыть файл"), curDir, "(*.vod)");
+	QString VodFileN = Widgets::FileDialog::getOpenFileName(this, QString::fromUtf8("Открыть файл"), curDir, "(*.vod)");
 
 	if (VodFileN.isEmpty()) {
 		return;
@@ -503,7 +504,10 @@ void Vodoley::loadZ()
 
 void Vodoley::saveZ()
 {
-	QString VodFile = QFileDialog::getSaveFileName(this, QString::fromUtf8("Сохранить файл"), curDir, "(*.vod)");
+	QString VodFile = Widgets::FileDialog::getSaveFileName(this, QString::fromUtf8("Сохранить файл"), curDir, "(*.vod)");
+	if (VodFile.isEmpty()) {
+		return;
+	}
 
 	if (VodFile.right(4) != ".vod") {
 		VodFile += ".vod";
@@ -523,6 +527,9 @@ void Vodoley::saveZ()
 	vFile.write((QString::number(AfillR) + " " + QString::number(BfillR) + " " + QString::number(CfillR)).toLatin1());
 
 	vFile.close();
+	if (!Widgets::FileDialog::finishSave(this, VodFile)) {
+		return;
+	}
 
 	QSettings vSett("NIISI RAS", "Vodoley");
 	QFileInfo fi(vFile);

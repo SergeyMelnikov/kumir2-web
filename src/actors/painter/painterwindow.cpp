@@ -13,6 +13,7 @@
 #include <QAction>
 #include <QScrollBar>
 #include <QFileDialog>
+#include <kumir2-libs/widgets/filedialog.h>
 
 
 namespace ActorPainter
@@ -243,7 +244,7 @@ void PainterWindow::loadImage()
 	QString searchDir = QDir::homePath();
 	ExtensionSystem::SettingsPtr s = m_module->mySettings();
 	searchDir = s->value("LastDir", searchDir).toString();
-	QString fn = QFileDialog::getOpenFileName(this,
+	QString fn = Widgets::FileDialog::getOpenFileName(this,
 			tr("Load image..."),
 			searchDir,
 			tr("Images (*.png)"));
@@ -265,11 +266,14 @@ void PainterWindow::saveImageAs()
 		QString::fromUtf8("picture.png") :
 		QString::fromUtf8("copy of ") + QFileInfo(s_templateName).fileName();
 	searchDir = s->value("LastDir", searchDir).toString();
-	QString fileName = QFileDialog::getSaveFileName(this, tr("Save image..."),
+	QString fileName = Widgets::FileDialog::getSaveFileName(this, tr("Save image..."),
 			searchDir + "/" + suggestName,
 			tr("Images (*.png)"));
 	if (!fileName.isEmpty()) {
 		saveImageToFile(fileName);
+		if (!Widgets::FileDialog::finishSave(this, fileName)) {
+			return;
+		}
 		s_fileName = fileName;
 		updateWindowTitle(fileName, QFileInfo(s_templateName).fileName());
 		s->setValue("LastDir", QFileInfo(fileName).dir().absolutePath());

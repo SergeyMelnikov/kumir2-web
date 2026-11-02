@@ -8,6 +8,7 @@ You should change it corresponding to functionality.
 
 #include "rfield.h"
 #include <kumir2/qtcompat_gui.h>
+#include <kumir2-libs/widgets/filedialog.h>
 #include "cfield.h"
 #include "srobot.h"
 #include "robotmodule.h"
@@ -1039,7 +1040,7 @@ void RobotModule::loadEnv()
 		}
 	}
 
-	QString RobotFile = QFileDialog::getOpenFileName(
+	QString RobotFile = Widgets::FileDialog::getOpenFileName(
 		mainWidget(),
 		QString::fromUtf8("Открыть файл"),
 		curDir, "(*.fil)"
@@ -1076,11 +1077,14 @@ void RobotModule::resetEnv()
 
 void RobotModule::save2png()
 {
-	QString RobotFile = QFileDialog::getSaveFileName(
+	QString RobotFile = Widgets::FileDialog::getSaveFileName(
 		mainWidget(),
 		QString::fromUtf8("Сохранить как изображение"),
 		curPDir, "(*.png)"
 	);
+	if (RobotFile.isEmpty()) {
+		return;
+	}
 
 	QFileInfo info(RobotFile);
 	QDir dir = info.absoluteDir();
@@ -1092,7 +1096,10 @@ void RobotModule::save2png()
 	QImage image(field->width()*multip, field->height()*multip, QImage::Format_ARGB32_Premultiplied);
 	QPainter painter(&image);
 	field->render(&painter);
-	image.save(RobotFile);
+	painter.end();
+	if (image.save(RobotFile)) {
+		Widgets::FileDialog::finishSave(mainWidget(), RobotFile);
+	}
 }
 
 void RobotModule::prepareNewWindow()
@@ -1207,11 +1214,14 @@ void RobotModule::newEnv()
 
 void RobotModule::saveEnv()
 {
-	QString RobotFile = QFileDialog::getSaveFileName(
+	QString RobotFile = Widgets::FileDialog::getSaveFileName(
 		mainWidget(),
 		QString::fromUtf8("Сохранить файл"),
 		curDir, "(*.fil)"
 	);
+	if (RobotFile.isEmpty()) {
+		return;
+	}
 
 	QFileInfo info(RobotFile);
 	QDir dir = info.absoluteDir();
@@ -1226,7 +1236,9 @@ void RobotModule::saveEnv()
 		RobotFile += ".fil";
 	}
 
-	SaveToFile(RobotFile);
+	if (SaveToFile(RobotFile) != 0 || !Widgets::FileDialog::finishSave(mainWidget(), RobotFile)) {
+		return;
+	}
 
 	RobotModule::robotSettings()->setValue("Robot/SFF", RobotFile);
 	updateLastFiles(RobotFile);

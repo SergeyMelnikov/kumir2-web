@@ -4,12 +4,110 @@
 
 #include <kumir2/browserinterface.h>
 #include <kumir2/browser_instanceinterface.h>
+#include <kumir2-libs/widgets/filedialog.h>
 
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QTextBrowser>
 #include <QAbstractButton>
 #include <QCloseEvent>
+
+#ifdef Q_OS_WASM
+#include <QApplication>
+#include <QDirIterator>
+#include <QPushButton>
+#include <QRegularExpression>
+#include <algorithm>
+
+// Course files (*.kurs.xml) in @param root and its subfolders, nearest first
+static QStringList findCourseFiles(const QString &root)
+{
+	QStringList result;
+	QDirIterator it(root, QStringList() << "*.kurs.xml", QDir::Files, QDirIterator::Subdirectories);
+	while (it.hasNext()) {
+		result << it.next();
+	}
+	std::sort(result.begin(), result.end(), [](const QString &a, const QString &b) {
+		const int depthA = a.count('/');
+		const int depthB = b.count('/');
+		return depthA != depthB ? depthA < depthB : a < b;
+	});
+	return result;
+}
+
+// Course name: xml:name attribute of the root element of a course file
+static QString courseTitle(const QString &fileName)
+{
+	QFile f(fileName);
+	if (f.open(QIODevice::ReadOnly)) {
+		static const QRegularExpression rx("<KURS[^>]*xml:name=\"([^\"]*)\"");
+		const QRegularExpressionMatch match = rx.match(QString::fromUtf8(f.read(4096)));
+		if (match.hasMatch() && !match.captured(1).trimmed().isEmpty()) {
+			return match.captured(1).trimmed();
+		}
+	}
+	return QFileInfo(fileName).fileName();
+}
+#endif
+
+// Chooses a course (*.kurs.xml) or, if @param allowWorkbook, also a
+// workbook (*.work.xml) to open
+static QString chooseCourseFile(QWidget *parent, const QString &dir, const QString &filter, bool allowWorkbook)
+{
+#ifdef Q_OS_WASM
+	// The browser picker shows the user's computer, not the courses built
+	// into the application. A course refers to its programs and environments
+	// by relative paths (often in subfolders), so it is loaded with its folder.
+	Q_UNUSED(dir);
+	Q_UNUSED(filter);
+	QMessageBox box(QMessageBox::Question, QString::fromUtf8("Практикум"),
+		allowWorkbook ? QString::fromUtf8("Что загрузить?") : QString::fromUtf8("Где находится курс?"),
+		QMessageBox::Cancel, parent);
+	box.button(QMessageBox::Cancel)->setText(QString::fromUtf8("Отмена"));
+	box.setInformativeText(QString::fromUtf8(
+		"Курс с компьютера загружается вместе с папкой, в которой находятся "
+		"файл курса (.kurs.xml) и файлы его заданий."));
+	QMap<QAbstractButton *, QString> builtInCourses;
+	const QStringList courses = findCourseFiles(qApp->property("sharePath").toString() + "/courses");
+	for (const QString &course : courses) {
+		QAbstractButton *button = box.addButton(
+			QString::fromUtf8("Курс «%1»").arg(courseTitle(course)), QMessageBox::AcceptRole);
+		builtInCourses.insert(button, course);
+	}
+	QAbstractButton *folderButton = box.addButton(
+		QString::fromUtf8("Папка курса с компьютера..."), QMessageBox::AcceptRole);
+	QAbstractButton *workbookButton = allowWorkbook
+		? box.addButton(QString::fromUtf8("Тетрадь с компьютера..."), QMessageBox::AcceptRole)
+		: 0;
+	box.exec();
+	QAbstractButton *clicked = box.clickedButton();
+	if (builtInCourses.contains(clicked)) {
+		return builtInCourses.value(clicked);
+	}
+	if (clicked == folderButton) {
+		const QString folder = Widgets::FileDialog::getExistingDirectory(parent,
+			QString::fromUtf8("Папка курса"));
+		if (folder.isEmpty()) {
+			return QString();
+		}
+		const QStringList found = findCourseFiles(folder);
+		if (found.isEmpty()) {
+			QMessageBox::information(parent, QString::fromUtf8("Практикум"),
+				QString::fromUtf8("В выбранной папке нет файла курса (.kurs.xml)."));
+			return QString();
+		}
+		return found.first();
+	}
+	if (workbookButton && clicked == workbookButton) {
+		return Widgets::FileDialog::getOpenFileName(parent, QString::fromUtf8("Открыть файл"),
+			QString(), QString::fromUtf8("Тетради (*.work.xml);;Все файлы (*)"));
+	}
+	return QString();
+#else
+	Q_UNUSED(allowWorkbook);
+	return QFileDialog::getOpenFileName(parent, QString::fromUtf8("Открыть файл"), dir, filter);
+#endif
+}
 
 MainWindowTask::MainWindowTask(QWidget *parent) :
 	QMainWindow(parent),
@@ -345,7 +443,7 @@ void MainWindowTask::loadCourse()
 //     if(!dialog.exec())return;
 
 
-	QString    File = QFileDialog::getOpenFileName(this, QString::fromUtf8("Открыть файл"), dir, "Xml (*.xml)");
+	QString    File = chooseCourseFile(this, dir, "Xml (*.xml)", true);
 	QFileInfo fi(File);
 	if (!fi.exists()) {
 
@@ -738,12 +836,15 @@ void MainWindowTask::saveCourse()
 	}
 
 
-	QString fileName = QFileDialog::getSaveFileName(
+	QString fileName = Widgets::FileDialog::getSaveFileName(
 			this,
 			trUtf8("Сохранить изменения"),
 			open,
 			trUtf8("Тетради(*.work.xml);;Все файлы (*)")
 		);
+	if (fileName.isEmpty()) {
+		return;
+	}
 	QString type = fileName.right(9);
 	if (type != ".work.xml") {
 		fileName += ".work.xml";
@@ -824,6 +925,9 @@ void MainWindowTask::saveCourseFile()
 	cursWorkFile.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	cursWorkFile.write(saveXml.toByteArray());
 	cursWorkFile.close();
+	// Browser: the workbook is saved on the user's computer the first time;
+	// later changes update that file where the browser allows it
+	Widgets::FileDialog::finishSave(this, cursWorkFile.fileName(), Widgets::FileDialog::Update);
 
 };
 
@@ -852,7 +956,7 @@ QString MainWindowTask::getFileName(QString fileName)
 
 
 
-	QString File = QFileDialog::getOpenFileName(this, QString::fromUtf8("Открыть файл"), curDir,  finf.fileName() + " *.kurs.xml");
+	QString File = chooseCourseFile(this, curDir,  finf.fileName() + " *.kurs.xml", false);
 	QFileInfo fi(File);
 
 

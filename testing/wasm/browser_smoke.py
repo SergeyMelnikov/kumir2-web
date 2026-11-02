@@ -21,6 +21,9 @@ ACTIONS file, one per line:
   cancel-save           cancel the next native save (mock mode)
   fail-save             fail the next native write (mock mode)
   cancel-upload         cancel the next native open (mock mode)
+  picker-delay MS       native pickers answer after MS milliseconds (mock mode)
+  mock-files FILE...    files the next native open returns (mock mode)
+  check-saves N         fail unless N files were saved by native pickers (mock mode)
 """
 
 import os
@@ -151,6 +154,20 @@ def main():
             elif cmd == "cancel-upload":
                 page.evaluate("filePickerTest.cancelOpen = true")
                 page.keyboard.press("Control+o")
+            elif cmd == "picker-delay":
+                page.evaluate("ms => { filePickerTest.delayMs = ms; }", int(arg))
+            elif cmd == "mock-files":
+                files = [{"name": Path(f).name, "data": base64.b64encode(Path(f).read_bytes()).decode("ascii")}
+                         for f in arg.split()]
+                page.evaluate("""files => {
+                    filePickerTest.files = files.map(file => new File(
+                        [Uint8Array.from(atob(file.data), c => c.charCodeAt(0))], file.name));
+                }""", files)
+            elif cmd == "check-saves":
+                saves = page.evaluate("filePickerTest.saves.map(save => [save.name, save.bytes.length])")
+                stamp(f"native-picker saves: {saves}")
+                if len(saves) != int(arg):
+                    errors.append(f"expected {arg} native saves, got {len(saves)}")
             elif cmd == "shot":
                 page.screenshot(path=f"{outdir}/{arg}.png")
             elif cmd == "click":

@@ -84,7 +84,3 @@ kumir2_add_plugin(
 	SOURCES     ${UI_SOURCES} ${MOC_SOURCES} ${SOURCES} ${QRC_SOURCES}
 	LIBRARIES   ${QT_LIBRARIES} ${EXTRA_LIBS} KStdlib ExtensionSystem DataFormats Widgets DocBookViewer
 )
-
-if(EMSCRIPTEN AND KUMIR2_WASM_ASYNCIFY)
-    set_property(SOURCE mainwindow.cpp APPEND PROPERTY COMPILE_DEFINITIONS KUMIR2_WASM_ASYNCIFY)
-endif()
