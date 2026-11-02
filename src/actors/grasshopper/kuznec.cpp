@@ -18,6 +18,7 @@
 
 #include "kuznec.h"
 #include <kumir2/qtcompat.h>
+#include <kumir2-libs/widgets/filedialog.h>
 #if QT_VERSION >= 0x050000
 #include <QStandardPaths>
 #endif
@@ -1502,7 +1503,7 @@ void KumKuznec::LoadFromFileActivated()
 	QSettings sett("NIISI RAS", "Grasshopper");
 	QString cd = sett.value("Last", curDir).toString();
 
-	QString    VodFileN = QFileDialog::getOpenFileName(this, QString::fromUtf8("Открыть файл"), curDir, "(*.kz)");
+	QString    VodFileN = Widgets::FileDialog::getOpenFileName(this, QString::fromUtf8("Открыть файл"), curDir, "(*.kz)");
 	if (VodFileN.isEmpty()) {
 		return;
 	}
@@ -1519,12 +1520,10 @@ void KumKuznec::SaveToFileActivated()
 {
 	QSettings sett("NIISI RAS", "Grasshopper");
 	QString cd = sett.value("Last", curDir).toString();
-	QFileDialog dialog(MV, trUtf8("Сохранить файл"), curDir, "(*.kz)");
-	dialog.setAcceptMode(QFileDialog::AcceptSave);
-	if (!dialog.exec()) {
+	QString VodFile = Widgets::FileDialog::getSaveFileName(MV, trUtf8("Сохранить файл"), curDir, "(*.kz)");
+	if (VodFile.isEmpty()) {
 		return;
 	}
-	QString VodFile = dialog.selectedFiles().first();
 	if (VodFile.right(3) != ".kz") {
 		VodFile += ".kz";
 	}
@@ -1553,6 +1552,10 @@ void KumKuznec::SaveToFileActivated()
 		vFile.write(QString::number(flags_pos[i]).toLatin1() + " ");
 	}
 	vFile.write("\n;END\n");
+	vFile.close();
+	if (!Widgets::FileDialog::finishSave(MV, VodFile)) {
+		return;
+	}
 	fileName = QFileInfo(vFile).fileName();
 	MV->setWindowTitle(QString::fromUtf8("Кузнечик - ") + QFileInfo(vFile).fileName());
 }

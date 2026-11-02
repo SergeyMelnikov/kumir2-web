@@ -1,0 +1,25 @@
+# Menu items that open a native file picker which answers after a second,
+# like a user does. Qt must not stop when it handles the pointer events
+# received meanwhile (Programm > Save, Robot > Load/Save environment).
+wait 7
+picker-delay 1000
+click 60 12
+wait 1
+click 80 122
+wait 3
+check-saves 1
+mock-files /t/fixtures/field.fil
+click 773 12
+wait 1
+click 870 38
+wait 3
+shot robot-field-loaded
+click 773 12
+wait 1
+click 870 118
+wait 3
+check-saves 2
+click 578 12
+wait 1
+shot menu-still-works
+key Escape

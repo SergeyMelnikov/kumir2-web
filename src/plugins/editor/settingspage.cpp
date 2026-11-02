@@ -1,5 +1,6 @@
 #include "settingspage.h"
 #include <QRegExp>
+#include <kumir2-libs/widgets/filedialog.h>
 #include "ui_settingspage.h"
 
 #include <kumir2-libs/extensionsystem/pluginmanager.h>
@@ -380,7 +381,7 @@ void SettingsPage::validateProgramTemplateFile()
 void SettingsPage::browseInitialProgramTemplateFile()
 {
 	QString fileName = QDir::fromNativeSeparators(ui->templateFileName->text().trimmed());
-	fileName = QFileDialog::getOpenFileName(this,
+	fileName = Widgets::FileDialog::getOpenFileName(this,
 			tr("Choose initial program file"),
 			fileName,
 			QString("Kumir programs (*.kum)")

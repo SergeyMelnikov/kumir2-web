@@ -18,6 +18,7 @@
 #include <kumir2-libs/widgets/dockwindowplace.h>
 #include <kumir2-libs/widgets/secondarywindow.h>
 #include <kumir2-libs/widgets/multipagedialog.h>
+#include <kumir2-libs/widgets/filedialog.h>
 #include <kumir2-libs/docbookviewer/docbookview.h>
 #include <kumir2/analizerinterface.h>
 #include <kumir2/browserinterface.h>
@@ -41,27 +42,6 @@
 #ifdef Q_OS_WASM
 #include <QPointer>
 #include <QTemporaryDir>
-#include <emscripten.h>
-#ifdef KUMIR2_WASM_ASYNCIFY
-// Unlike QFileDialog::saveFileContent, the native browser picker can report
-// cancellation and write completion. Keep the editor dirty until it succeeds.
-EM_ASYNC_JS(int, saveWasmFile, (const char *data, int size, const char *name), {
-    const bytes = HEAPU8.slice(data, data + size);
-    const suggestedName = UTF8ToString(name);
-    try {
-        const handle = await window.showSaveFilePicker({ suggestedName });
-        const stream = await handle.createWritable();
-        await stream.write(bytes);
-        await stream.close();
-        return 1;
-    } catch (error) {
-        if (error.name === "AbortError")
-            return 0;
-        console.warn("Browser file save failed", error);
-        return -1;
-    }
-});
-#endif
 #endif
 
 namespace CoreGUI
@@ -1198,7 +1178,7 @@ void MainWindow::saveNativeExecutable()
 	}
 	QStringList filter;
 	filter << tr("Native executables (*.%1)").arg(fileSuffix);
-	fileName = QFileDialog::getSaveFileName(this, tr("Save native executable"), initialPath, filter.join(";;"));
+	fileName = Widgets::FileDialog::getSaveFileName(this, tr("Save native executable"), initialPath, filter.join(";;"));
 	if (!fileName.isEmpty()) {
 #ifdef Q_OS_WIN32
 		if (!fileName.endsWith("." + fileSuffix)) {
@@ -1218,6 +1198,7 @@ void MainWindow::saveNativeExecutable()
 			QFile::Permissions ps = f.permissions();
 			ps |= QFile::ExeGroup | QFile::ExeOwner | QFile::ExeOther;
 			QFile::setPermissions(fileName, ps);
+			Widgets::FileDialog::finishSave(this, fileName);
 		}
 	}
 	worker->progressDialog->deleteLater();
@@ -1320,21 +1301,18 @@ bool MainWindow::saveCurrentFileAs()
 		contents = Kumir2Qt::encodeText(original.visibleText, "UTF-8", true);
 	}
 	QPointer<TabWidgetElement> savedTab(twe);
-#ifdef KUMIR2_WASM_ASYNCIFY
-	if (EM_ASM_INT({ return typeof window.showSaveFilePicker === "function"; })) {
-		const int result = saveWasmFile(contents.constData(), contents.size(), fileName.toUtf8().constData());
-		if (result <= 0) {
-			if (result < 0) {
-				QMessageBox::critical(this, tr("Can't save file"), tr("The browser could not save the file."));
-			}
-			return false;
-		}
-	} else
-#endif
-	{
-		// Browsers without File System Access initiate a download. They do
-		// not expose completion or cancellation of an external download UI.
-		QFileDialog::saveFileContent(contents, fileName, this);
+	// Unlike a download, the browser save picker reports cancellation and
+	// write completion: the editor stays modified until the file is written.
+	// Browsers without the picker start a download and do not report whether
+	// the user kept the file.
+	const Widgets::FileDialog::SaveResult result =
+		Widgets::FileDialog::saveFileContent(this, contents, fileName);
+	if (result == Widgets::FileDialog::Cancelled) {
+		return false;
+	}
+	if (result == Widgets::FileDialog::Failed) {
+		QMessageBox::critical(this, tr("Can't save file"), tr("The browser could not save the file."));
+		return false;
 	}
 	if (savedTab && savedTab->editor()) {
 		const Shared::Analizer::SFData current = savedTab->editor()->documentContents();

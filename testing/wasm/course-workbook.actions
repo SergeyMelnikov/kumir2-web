@@ -1,0 +1,15 @@
+# Practicum > Load course: built-in course, then "Create" a workbook,
+# which is saved with the native save picker.
+wait 7
+picker-delay 1000
+click 578 12
+wait 1
+click 620 38
+wait 2
+shot course-source-choice
+click 100 133
+wait 4
+click 528 307
+wait 4
+check-saves 1
+shot course-loaded

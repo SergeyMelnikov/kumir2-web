@@ -21,6 +21,7 @@ You should change it corresponding to functionality.
 #include <QIcon>
 #include <QAction>
 #include <QFileDialog>
+#include <kumir2-libs/widgets/filedialog.h>
 #include <QVector2D>
 #include <QTimer>
 #include <QGraphicsItem>
@@ -156,7 +157,7 @@ QString DrawModule::initialize(const QStringList &configurationParameters, const
 
 void  DrawModule::openFile()
 {
-	QString File = QFileDialog::getOpenFileName(mainWidget(), QString::fromUtf8("Открыть файл"), curDir.path(), "(*.ps)");
+	QString File = Widgets::FileDialog::getOpenFileName(mainWidget(), QString::fromUtf8("Открыть файл"), curDir.path(), "(*.ps)");
 
 	if (File.isEmpty()) {
 		return;
@@ -170,7 +171,10 @@ void  DrawModule::openFile()
 
 void  DrawModule::saveFile()
 {
-	QString File = QFileDialog::getSaveFileName(CurView, QString::fromUtf8("Сохранить файл"), curDir.path(), "(*.ps)");
+	QString File = Widgets::FileDialog::getSaveFileName(CurView, QString::fromUtf8("Сохранить файл"), curDir.path(), "(*.ps)");
+	if (File.isEmpty()) {
+		return;
+	}
 	if (File.contains("*") || File.contains("?")) {
 		QMessageBox::information(0, "", QString::fromUtf8("Недопустимый символ в имени файла!"), 0, 0, 0);
 		return;
@@ -183,7 +187,9 @@ void  DrawModule::saveFile()
 	QFileInfo info(File);
 	QDir dir = info.absoluteDir();
 	curDir = dir.path();
-	CurScene->saveToFile(File);
+	if (CurScene->saveToFile(File) == 0) {
+		Widgets::FileDialog::finishSave(CurView, File);
+	}
 }
 
 void DrawModule::showNavigator(bool state)
