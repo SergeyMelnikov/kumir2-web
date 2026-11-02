@@ -1314,7 +1314,9 @@ bool MainWindow::saveCurrentFileAs()
 		QMessageBox::critical(this, tr("Can't save file"), tr("The browser could not save the file."));
 		return false;
 	}
-	if (savedTab && savedTab->editor()) {
+	// A download may have failed or been discarded: the document stays
+	// modified, so closing it still asks to save
+	if (result == Widgets::FileDialog::Saved && savedTab && savedTab->editor()) {
 		const Shared::Analizer::SFData current = savedTab->editor()->documentContents();
 		if (current.visibleText == original.visibleText && current.hiddenText == original.hiddenText
 			&& current.protectedLineNumbers == original.protectedLineNumbers
@@ -1322,7 +1324,10 @@ bool MainWindow::saveCurrentFileAs()
 			savedTab->editor()->setNotModified();
 		}
 	}
-	setTitleForTab(tabWidget_->currentIndex());
+	// The current tab may have changed while the browser picker was open
+	if (savedTab) {
+		setTitleForTab(tabWidget_->indexOf(savedTab));
+	}
 	return true;
 #else
 	using namespace ExtensionSystem;
